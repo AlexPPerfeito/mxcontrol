@@ -330,6 +330,44 @@ body {
   width: 26px;
   height: 26px;
   stroke: var(--text-main);
+  transition: transform 0.25s ease, stroke 0.2s ease;
+}
+
+.mobile-toggle .icon-close {
+  display: none;
+}
+
+.mobile-toggle.is-open .icon-menu {
+  display: none;
+}
+
+.mobile-toggle.is-open .icon-close {
+  display: block;
+  stroke: var(--accent-yamaha);
+}
+
+/* Backdrop escurecido para clique fora no Mobile */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.68);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s ease;
+  z-index: 998;
+}
+
+.menu-backdrop.active {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+body.menu-open {
+  overflow: hidden;
 }
 
 /* ==========================================================================
@@ -1485,19 +1523,24 @@ body {
     left: 0;
     right: 0;
     background: rgba(10, 13, 20, 0.98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
     flex-direction: column;
-    padding: 28px 24px;
-    gap: 18px;
-    border-bottom: 1px solid var(--border-subtle);
+    padding: 26px 24px 30px;
+    gap: 16px;
+    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.75);
     transform: translateY(-120%);
-    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    opacity: 0;
+    visibility: hidden;
+    transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease, visibility 0.32s ease;
     z-index: 999;
   }
 
   .nav-links.active {
     transform: translateY(0);
+    opacity: 1;
+    visibility: visible;
   }
 
   /* Botão CTA integrado dentro do menu expansível no mobile */

@@ -103,16 +103,23 @@
         </a>
 
         <!-- Botão Menu Mobile -->
-        <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu de navegação" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu de navegação" aria-expanded="false" aria-controls="navLinks">
+          <svg class="icon-menu" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+          <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- Overlay / Backdrop para fechar o menu mobile ao clicar fora -->
+  <div class="menu-backdrop" id="menuBackdrop" aria-hidden="true"></div>
 
   <!-- DOBRA PRINCIPAL (HERO SECTION) -->
   <section class="hero" id="inicio">
@@ -663,36 +670,111 @@
     </div>
   </footer>
 
-  <!-- Scripts Interativos Leves (Zero dependências) -->
+  <!-- Scripts Interativos Leves (Zero dependências externas) -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const header = document.getElementById('siteHeader');
       const mobileToggle = document.getElementById('mobileToggle');
       const navLinks = document.getElementById('navLinks');
+      const backdrop = document.getElementById('menuBackdrop');
 
-      // Efeito de rolagem na Navbar
-      window.addEventListener('scroll', () => {
+      // 1. Efeito de rolagem na Navbar (Glassmorphism mais escuro ao rolar)
+      const handleScroll = () => {
         if (window.scrollY > 20) {
           header.classList.add('scrolled');
         } else {
           header.classList.remove('scrolled');
         }
-      });
+      };
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      handleScroll();
 
-      // Toggle do Menu Mobile
+      // Funções para controle do Menu Mobile
+      const openMobileMenu = () => {
+        navLinks.classList.add('active');
+        mobileToggle.classList.add('is-open');
+        mobileToggle.setAttribute('aria-expanded', 'true');
+        mobileToggle.setAttribute('aria-label', 'Fechar menu de navegação');
+        if (backdrop) backdrop.classList.add('active');
+        document.body.classList.add('menu-open');
+      };
+
+      const closeMobileMenu = () => {
+        navLinks.classList.remove('active');
+        mobileToggle.classList.remove('is-open');
+        mobileToggle.setAttribute('aria-expanded', 'false');
+        mobileToggle.setAttribute('aria-label', 'Abrir menu de navegação');
+        if (backdrop) backdrop.classList.remove('active');
+        document.body.classList.remove('menu-open');
+      };
+
       if (mobileToggle && navLinks) {
-        mobileToggle.addEventListener('click', () => {
-          const isExpanded = mobileToggle.getAttribute('aria-expanded') === 'true';
-          mobileToggle.setAttribute('aria-expanded', !isExpanded);
-          navLinks.classList.toggle('active');
+        // Alternar Menu pelo botão
+        mobileToggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isOpen = navLinks.classList.contains('active');
+          if (isOpen) {
+            closeMobileMenu();
+          } else {
+            openMobileMenu();
+          }
         });
 
-        // Fechar menu mobile ao clicar em um link
+        // 1. Fechar ao clicar em qualquer link dentro do menu mobile com rolagem suave
         navLinks.querySelectorAll('a').forEach(link => {
-          link.addEventListener('click', () => {
-            navLinks.classList.remove('active');
-            mobileToggle.setAttribute('aria-expanded', 'false');
+          link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+
+            // Se for link âncora interno para uma seção da página (#recursos, #como-conectar, etc.)
+            if (href && href.startsWith('#')) {
+              e.preventDefault();
+              const targetId = href.substring(1);
+              const targetElement = document.getElementById(targetId);
+
+              closeMobileMenu();
+
+              if (targetElement) {
+                // Aguarda o menu iniciar a transição de recolhimento antes da rolagem suave
+                setTimeout(() => {
+                  const headerHeight = header ? header.offsetHeight : 66;
+                  const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+                  window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                  });
+                }, 120);
+              }
+            } else {
+              // Links externos ou outras páginas (Google Play, YouTube, privacy-policy.html)
+              closeMobileMenu();
+            }
           });
+        });
+
+        // 2. Fechar ao clicar fora (backdrop ou qualquer parte fora do menu)
+        if (backdrop) {
+          backdrop.addEventListener('click', () => {
+            closeMobileMenu();
+          });
+        }
+
+        document.addEventListener('click', (e) => {
+          if (!navLinks.classList.contains('active')) return;
+          // Se o clique não foi no próprio menu e nem no botão de alternância
+          if (!navLinks.contains(e.target) && !mobileToggle.contains(e.target)) {
+            closeMobileMenu();
+          }
+        });
+
+        // 3. Fechar ao pressionar a tecla ESC
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' || e.key === 'Esc') {
+            if (navLinks.classList.contains('active')) {
+              closeMobileMenu();
+              mobileToggle.focus();
+            }
+          }
         });
       }
     });
