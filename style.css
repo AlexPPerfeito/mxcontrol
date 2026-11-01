@@ -168,6 +168,7 @@ body {
   font-weight: 800;
   font-size: 1.35rem;
   letter-spacing: -0.02em;
+  flex-shrink: 0;
 }
 
 .logo-icon-wrap {
@@ -182,12 +183,20 @@ body {
   align-items: center;
   justify-content: center;
   background: #141722;
+  flex-shrink: 0;
 }
 
 .logo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.brand-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
 }
 
 .brand-text span {
@@ -198,14 +207,17 @@ body {
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 2px 7px;
+  padding: 3px 7px;
   border-radius: 20px;
   background: rgba(0, 229, 255, 0.12);
   color: var(--accent-cyan);
   border: 1px solid rgba(0, 229, 255, 0.3);
   letter-spacing: 0.05em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   vertical-align: middle;
-  margin-left: 6px;
 }
 
 .nav-links {
@@ -287,6 +299,10 @@ body {
   gap: 16px;
 }
 
+.mobile-cta-item {
+  display: none;
+}
+
 /* Mobile Toggle */
 .mobile-toggle {
   display: none;
@@ -295,6 +311,19 @@ body {
   color: var(--text-main);
   cursor: pointer;
   padding: 8px;
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+}
+
+.mobile-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.mobile-toggle:active {
+  transform: scale(0.95);
 }
 
 .mobile-toggle svg {
@@ -1421,11 +1450,33 @@ body {
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 70px;
+    --header-height: 66px;
+  }
+
+  .brand-logo {
+    font-size: 1.15rem;
+    gap: 8px;
+  }
+
+  .logo-icon-wrap {
+    width: 36px;
+    height: 36px;
+  }
+
+  .badge-version {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+
+  /* Oculta o botão CTA da barra superior no mobile para evitar quebras de linha e esmagamento */
+  .header-cta .btn-primary,
+  .header-cta #headerCtaBtn,
+  .header-cta .btn-outline {
+    display: none !important;
   }
 
   .mobile-toggle {
-    display: block;
+    display: inline-flex;
   }
 
   .nav-links {
@@ -1437,8 +1488,8 @@ body {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     flex-direction: column;
-    padding: 30px 24px;
-    gap: 20px;
+    padding: 28px 24px;
+    gap: 18px;
     border-bottom: 1px solid var(--border-subtle);
     transform: translateY(-120%);
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1449,8 +1500,21 @@ body {
     transform: translateY(0);
   }
 
-  .header-cta .btn-outline {
-    display: none;
+  /* Botão CTA integrado dentro do menu expansível no mobile */
+  .mobile-cta-item {
+    display: block;
+    width: 100%;
+    padding-top: 12px;
+    margin-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobile-cta-item .btn {
+    width: 100%;
+    display: inline-flex !important;
+    padding: 13px 20px;
+    font-size: 0.95rem;
+    box-shadow: 0 8px 20px rgba(255, 77, 46, 0.35);
   }
 
   .metrics-grid {
