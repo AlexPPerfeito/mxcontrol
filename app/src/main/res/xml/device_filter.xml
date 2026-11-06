@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Yamaha Corporation Vendor ID = 0x0499 (1177) -->
+    <usb-device vendor-id="1177" />
+    <!-- Standard USB MIDI Class: Class 1 (Audio), Subclass 3 (MIDStreaming) -->
+    <usb-device class="1" subclass="3" />
+</resources>

@@ -1,0 +1,361 @@
+<resources>
+    <!-- =================================================================== -->
+    <!-- 1. NAVIGATION & CONNECTION HEADER                                   -->
+    <!-- =================================================================== -->
+    <string name="app_name">MX Control</string>
+    <string name="header_brand_title">CONTROL</string>
+
+    <!-- Main View Modes / Navigation Tabs -->
+    <string name="nav_tab_part">Part</string>
+    <string name="nav_tab_part_caps">PART</string>
+    <string name="nav_tab_mixer">Mixer</string>
+    <string name="nav_tab_mixer_caps">MIXER</string>
+    <string name="nav_tab_setlist">Setlist</string>
+    <string name="nav_tab_setlist_caps">SETLIST</string>
+
+    <!-- Header Connection Status -->
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="searching">Searching for USB MIDI device...</string>
+    <string name="no_device_found">No Yamaha MX connected via USB OTG</string>
+    <string name="status_no_connection">No connection</string>
+    <string name="status_no_usb_connection">No USB OTG connection</string>
+    <string name="status_yamaha_connected">Yamaha MX Connected</string>
+
+    <!-- Device Selection Dropdown Menu -->
+    <string name="action_scan_midi_devices">Scan MIDI Devices</string>
+    <string name="action_sync_all_devices">Sync with Keyboard (Sync All)</string>
+    <string name="no_midi_devices_found">No devices found</string>
+    <string name="device_info_format">ID: %1$d | In: %2$d Out: %3$d</string>
+
+    <!-- Header Quick Actions -->
+    <string name="part_link">Part 1-2 Link</string>
+    <string name="part_link_short">Link 1-2</string>
+    <string name="action_sync">SYNC</string>
+    <string name="cd_sync">Sync</string>
+    <string name="panic">PANIC</string>
+    <string name="cd_panic">Panic</string>
+    <string name="badge_polyphony_notes">NOTES</string>
+    <string name="badge_polyphony_format">%1$d/128</string>
+    <string name="cd_save_performance">Save Performance</string>
+    <string name="cd_reset_performance">Reset Performance</string>
+    <string name="cd_pro_feature">Pro</string>
+
+    <!-- =================================================================== -->
+    <!-- 2. MIXER & CHANNELS (MixerOverview, PartStripItem, PartDetail)      -->
+    <!-- =================================================================== -->
+    <!-- Live Focus & Layer Status Banners -->
+    <string name="mixer_banner_layer_active">Active Layer: %1$s on Keyboard (Ch 1)</string>
+    <string name="mixer_banner_live_focus">🎹 Live: Part %1$d [%2$s] on keyboard. Tap to focus, hold for layer.</string>
+
+    <!-- Channel Strip Header -->
+    <string name="part_strip_locked">P%1$d PRO</string>
+    <string name="part_strip_active">P%1$d ACTIVE</string>
+    <string name="part_strip_layer">P%1$d LAYER</string>
+    <string name="part_strip_default">PART %1$d</string>
+    <string name="part_tab_format">P%1$d</string>
+    <string name="voice_locked">Locked</string>
+    <string name="tag_pro">[PRO]</string>
+    <string name="tag_user">[USR]</string>
+
+    <!-- MIDI Rx Channel Picker -->
+    <string name="channel_locked_pro">Ch PRO</string>
+    <string name="channel_keyboard_physical">Ch 1 (Physical Keyboard)</string>
+    <string name="channel_format">Ch %1$d</string>
+    <string name="channel_off">Off (Disabled)</string>
+
+    <!-- Mute / Solo Buttons -->
+    <string name="btn_mute_short">M</string>
+    <string name="btn_solo_short">S</string>
+    <string name="btn_mute">MUTE</string>
+    <string name="btn_solo">SOLO</string>
+
+    <!-- Octave / Transpose -->
+    <string name="octave_down_short">-8va</string>
+    <string name="octave_up_short">+8va</string>
+    <string name="octave_zero">0 Oct</string>
+    <string name="octave_plus_1">+1 Oct</string>
+    <string name="octave_minus_1">-1 Oct</string>
+    <string name="octave_plus_2">+2 Oct</string>
+    <string name="octave_minus_2">-2 Oct</string>
+    <string name="octave_plus_semitones">+%1$dst</string>
+    <string name="octave_minus_semitones">%1$dst</string>
+
+    <!-- Fader / Parameter Labels -->
+    <string name="vol_label">VOL</string>
+    <string name="mod_locked">MOD: -</string>
+    <string name="mod_bypass">BYPASS</string>
+    <string name="mod_rcv">RCV</string>
+    <string name="mod_value_format">MOD %1$d</string>
+    <string name="strip_summary_format">Pan %1$s | %2$s..%3$s</string>
+
+    <!-- Part Detail Screen -->
+    <string name="nav_prev_part">Previous Part</string>
+    <string name="nav_next_part">Next Part</string>
+    <string name="part_detail_title_active">PART %1$d (ACTIVE)</string>
+    <string name="part_detail_title_default">PART %1$d / 16</string>
+    <string name="midi_rx_display_format">MIDI Rx: %1$s</string>
+    <string name="midi_rx_channel_title">MIDI Receive Channel</string>
+    <string name="midi_rx_channel_format">Channel %1$d</string>
+    <string name="midi_rx_ch1_physical_suffix"> (Physical Keyboard / Ch 1)</string>
+    <string name="btn_focus">FOCUS</string>
+    <string name="btn_layer_on">LAYER ON</string>
+    <string name="btn_layer_add">+ LAYER</string>
+    <string name="cd_change_voice">Change Voice</string>
+
+    <!-- Editing Sections and Controls -->
+    <string name="section_mix_effects">MIX &amp; EFFECTS</string>
+    <string name="param_volume">Volume</string>
+    <string name="param_pan">PAN</string>
+    <string name="param_transpose">Transpose (Note Shift)</string>
+    <string name="btn_octave_down_full">-1 Oct (-8va)</string>
+    <string name="btn_octave_reset">Reset (0)</string>
+    <string name="btn_octave_up_full">+1 Oct (+8va)</string>
+    <string name="param_reverb_send">Reverb Send</string>
+    <string name="param_chorus_send">Chorus Send</string>
+    <string name="section_filter">FILTER (TONE GENERATOR)</string>
+    <string name="param_cutoff">Cutoff</string>
+    <string name="param_resonance">Resonance</string>
+
+    <!-- Modulation / Rotary -->
+    <string name="section_modulation">MODULATION / ROTARY</string>
+    <string name="mod_rcv_on">RCV: ON</string>
+    <string name="mod_desc_enabled">MIDI CC 1 (Vibrato / Rotary Speed) • Hardware Switch Active</string>
+    <string name="mod_desc_bypass">Bypass active: modulation blocked on hardware and app</string>
+    <string name="btn_mod_fast">FAST (127)</string>
+    <string name="btn_mod_slow">SLOW (0)</string>
+    <string name="mod_byp">BYP</string>
+    <string name="cd_mod_decrease">Decrease Modulation</string>
+    <string name="cd_mod_increase">Increase Modulation</string>
+    <string name="cd_decrease">Decrease</string>
+    <string name="cd_increase">Increase</string>
+
+    <!-- Splits & Keyboard -->
+    <string name="section_keyboard_overview">KEYBOARD OVERVIEW (SPLITS &amp; LAYERS)</string>
+    <string name="section_note_limit">NOTE LIMIT / KEYBOARD SPLIT</string>
+    <string name="split_full_format">Full (%1$s..%2$s)</string>
+    <string name="split_lower_format">Lower (%1$s..%2$s)</string>
+    <string name="split_upper_format">Upper (%1$s..%2$s)</string>
+
+    <!-- =================================================================== -->
+    <!-- 3. SETLIST & CATEGORIES (SetlistScreen, Presets, Tags)              -->
+    <!-- =================================================================== -->
+    <string name="action_save_current">Save Current</string>
+    <string name="action_backup_json">Backup / JSON</string>
+    <string name="search_setlist_placeholder">Search song, tag or voice...</string>
+    <string name="cd_clear_search">Clear search</string>
+    <string name="tag_all">ALL</string>
+    <string name="performances_count_format">%1$d performances found</string>
+    <string name="empty_setlist_filtered">No performances found for the current filter.</string>
+    <string name="empty_setlist_placeholder">No performances saved yet.\nTap \'Save Current\' to store your first preset!</string>
+
+    <!-- Performance Card -->
+    <string name="status_active_on_mx">ACTIVE ON MX</string>
+    <string name="cd_options">Options</string>
+    <string name="menu_rename_tag">Rename / Tag</string>
+    <string name="menu_duplicate">Duplicate</string>
+    <string name="menu_delete">Delete</string>
+    <string name="label_link_1_2"> Link 1-2</string>
+    <string name="btn_reload">Reload</string>
+    <string name="btn_load">Load</string>
+
+    <!-- Standard Setlist Categories -->
+    <string name="category_general">GENERAL</string>
+    <string name="category_rock">ROCK</string>
+    <string name="category_worship">WORSHIP</string>
+    <string name="category_pop">POP</string>
+    <string name="category_jazz">JAZZ</string>
+    <string name="category_rehearsal">REHEARSAL</string>
+
+    <!-- Default Factory Presets -->
+    <string name="preset_ballad_piano_strings">Ballad Piano &amp; Strings</string>
+    <string name="preset_worship_rhodes_pad">Worship Rhodes &amp; Pad</string>
+    <string name="preset_rock_organ_bass">Rock Organ + Bass Split</string>
+
+    <!-- =================================================================== -->
+    <!-- 4. DIALOGS, MODALS & BACKUP                                         -->
+    <!-- =================================================================== -->
+    <!-- Save / Edit Performance -->
+    <string name="dialog_title_edit_performance">Edit Performance</string>
+    <string name="dialog_title_save_current_performance">Save Current Performance</string>
+    <string name="dialog_title_save_performance">Save Performance</string>
+    <string name="label_performance_name">Performance Name</string>
+    <string name="placeholder_performance_name">e.g.: Rock Show - Song 01</string>
+    <string name="dialog_loaded_performance_hint">Loaded performance: \'%1$s\'\nChoose \'Update\' to overwrite or \'Save as New\' to duplicate.</string>
+    <string name="label_category_tag">Category / Tag</string>
+    <string name="btn_save_as_new">Save as New</string>
+    <string name="btn_update">Update</string>
+    <string name="btn_save">Save</string>
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_ok">OK</string>
+    <string name="btn_close">Close</string>
+    <string name="copy_suffix">%1$s (Copy)</string>
+    <string name="default_performance_name">Performance %1$d</string>
+    <string name="default_performance_untitled">Untitled Performance</string>
+    <string name="default_performance_my">My Performance</string>
+    <string name="default_category_fallback">General</string>
+
+    <!-- Reset Performance -->
+    <string name="dialog_reset_title">Reset Performance?</string>
+    <string name="dialog_reset_message">This will restore voices, volumes, splits, effects and link on all 16 parts to default values.</string>
+    <string name="btn_reset">Reset</string>
+
+    <!-- Rename Category -->
+    <string name="dialog_rename_category_title">Rename Category</string>
+    <string name="dialog_rename_category_prompt">Enter new name for category \'%1$s\':</string>
+    <string name="error_category_empty">Category name cannot be empty.</string>
+    <string name="error_category_reserved_all">\'ALL\' is a reserved system name.</string>
+    <string name="error_category_already_exists">A category with this name already exists.</string>
+
+    <!-- Backup & Sharing (Import/Export JSON) -->
+    <string name="dialog_backup_title">Setlists Backup &amp; Sharing</string>
+    <string name="tab_export_json">Export JSON</string>
+    <string name="tab_import_json">Import JSON</string>
+    <string name="export_json_instructions">Copy the JSON content below to back up your performances:</string>
+    <string name="btn_copy_clipboard">Copy to Clipboard</string>
+    <string name="import_json_instructions">Paste your Setlist JSON code to restore or add:</string>
+    <string name="placeholder_paste_json">Paste JSON here...</string>
+    <string name="btn_import_performances">Import Performances</string>
+    <string name="dialog_strategy_title">How would you like to import the backup?</string>
+    <string name="dialog_strategy_message">You already have %1$d performance(s) saved.\n\nDo you want to merge the new performances with existing ones or replace everything with the backup?</string>
+    <string name="btn_strategy_merge">Merge / Add</string>
+    <string name="btn_strategy_replace_all">Replace All</string>
+
+    <!-- Upgrade to Pro -->
+    <string name="pro_badge_lifetime">★ LIFETIME PRO VERSION</string>
+    <string name="pro_dialog_title">Unlock the Full Potential of your Yamaha MX</string>
+    <string name="pro_dialog_subtitle">Turn your keyboard into an unrestricted, complete live multitimbral stage workstation.</string>
+    <string name="pro_feature_16parts_title">16 Simultaneous Multitimbral Parts</string>
+    <string name="pro_feature_16parts_desc">Full access to all 16 channels of the Motif XS engine with independent faders and mixing.</string>
+    <string name="pro_feature_setlist_title">Unlimited Setlists &amp; Songs</string>
+    <string name="pro_feature_setlist_desc">Save and organize performances for your entire repertoire without slot restrictions.</string>
+    <string name="pro_feature_bluetooth_title">Wireless Bluetooth MIDI (BLE)</string>
+    <string name="pro_feature_bluetooth_desc">Connect wireless adapters (MD-BT01, CME WIDI) and BLE controllers with stage freedom.</string>
+    <string name="pro_feature_layers_title">Limitless Layers &amp; Splits</string>
+    <string name="pro_feature_layers_desc">Combine 2 to 16 simultaneous voices with instant live focus switching.</string>
+    <string name="pro_feature_license_title">One-Time Lifetime License</string>
+    <string name="pro_feature_license_desc">No subscriptions or monthly fees. One-time purchase with support for future updates.</string>
+    <string name="btn_unlock_pro">Unlock PRO for %1$s</string>
+    <string name="btn_restore_purchases">Already purchased? Restore Purchases</string>
+
+    <!-- Paywall on Startup (ProPaywallDialog) -->
+    <string name="paywall_badge">★ MX CONTROL PRO</string>
+    <string name="paywall_title">Unlock MX Control Pro</string>
+    <string name="paywall_subtitle">Access all professional features to elevate your Yamaha MX on stage and in the studio.</string>
+    <string name="paywall_benefit_layer_title">Advanced Multi-Layer</string>
+    <string name="paywall_benefit_layer">Multi-Layer: 3+ simultaneous parts</string>
+    <string name="paywall_benefit_ble_title">Wireless Bluetooth MIDI (BLE)</string>
+    <string name="paywall_benefit_ble">Full wireless Bluetooth MIDI (BLE)</string>
+    <string name="paywall_benefit_support_title">Advanced MIDI Mapping</string>
+    <string name="paywall_benefit_support">Advanced MIDI mapping &amp; continuous updates</string>
+    <string name="paywall_btn_pro">Get Pro Version</string>
+    <string name="paywall_btn_pro_with_price">Get Pro Version (%1$s)</string>
+    <string name="paywall_btn_wait">Please wait (%1$ds)...</string>
+    <string name="paywall_btn_continue">Continue with Free Version</string>
+
+    <!-- Voice Selector -->
+    <string name="voice_dialog_title">VOICE SELECTOR</string>
+    <string name="voice_dialog_subtitle_format">Part %1$d | %2$d voices found</string>
+    <string name="cd_close_revert">Close and Revert</string>
+    <string name="search_voices_placeholder">Search by name, category or bank...</string>
+    <string name="cd_search">Search</string>
+    <string name="cd_clear">Clear</string>
+    <string name="cd_prev_voice">Previous voice (-)</string>
+    <string name="cd_next_voice">Next voice (+)</string>
+    <string name="category_user_count">USER (128)</string>
+    <string name="category_user">USER</string>
+    <string name="category_all">ALL</string>
+    <string name="empty_voices_search">No voices found matching the search.</string>
+    <string name="label_audition">AUDITION</string>
+    <string name="no_voice_selected">No voice</string>
+    <string name="dialog_rename_user_voice_title">RENAME USER VOICE</string>
+    <string name="dialog_rename_user_voice_slot_format">Slot %1$s (PC %2$d)</string>
+    <string name="dialog_rename_user_voice_prompt">Enter a custom name to identify this patch:</string>
+    <string name="placeholder_voice_name">Voice name...</string>
+    <string name="cd_rename_voice">Rename Voice</string>
+    <string name="cd_selected">Selected</string>
+    <string name="voice_user_slot_format">User Voice Slot %1$s • MSB:63 LSB:8 PC:%2$d</string>
+
+    <!-- Preset Bank Voice Categories (YamahaVoice) -->
+    <string name="voice_cat_acoustic_piano">Acoustic Piano</string>
+    <string name="voice_cat_keyboard_ep">Keyboard / EP</string>
+    <string name="voice_cat_organ">Organ</string>
+    <string name="voice_cat_guitar">Guitar</string>
+    <string name="voice_cat_bass">Bass</string>
+    <string name="voice_cat_strings">Strings</string>
+    <string name="voice_cat_brass">Brass</string>
+    <string name="voice_cat_woodwind">Woodwind / Reed</string>
+    <string name="voice_cat_synth_lead">Synth Lead</string>
+    <string name="voice_cat_pad_choir">Pad / Choir</string>
+    <string name="voice_cat_synth_comp">Synth Comp</string>
+    <string name="voice_cat_chromatic_perc">Chromatic Perc</string>
+    <string name="voice_cat_drum_perc">Drum / Percussion</string>
+    <string name="voice_cat_ethnic">Ethnic</string>
+    <string name="voice_cat_sound_fx">Sound FX</string>
+    <string name="voice_cat_musical_fx">Musical FX</string>
+
+    <!-- =================================================================== -->
+    <!-- 5. GENERAL, STATUS, TOASTS & NOTIFICATIONS                          -->
+    <!-- =================================================================== -->
+    <!-- Performance Toasts -->
+    <string name="toast_performance_saved_new">New performance \'%1$s\' saved successfully!</string>
+    <string name="toast_performance_updated">Performance \'%1$s\' updated successfully!</string>
+    <string name="toast_reloading_performance">Reloading \'%1$s\' to keyboard...</string>
+    <string name="toast_loading_performance">Loading \'%1$s\' to keyboard...</string>
+    <string name="toast_performance_duplicated">Performance duplicated!</string>
+    <string name="toast_performance_deleted">Performance deleted.</string>
+    <string name="toast_performance_updated_simple">Performance updated!</string>
+    <string name="toast_category_renamed">Category renamed to \'%1$s\'!</string>
+    <string name="toast_category_rename_failed">Could not rename category.</string>
+    <string name="toast_setlist_json_copied">JSON copied to Clipboard!</string>
+    <string name="toast_import_empty_error">Paste a valid JSON before importing</string>
+    <string name="toast_import_invalid_error">Invalid or corrupted JSON. Check the formatting.</string>
+    <string name="toast_import_replaced_success">Setlist replaced successfully! %1$d performances restored.</string>
+    <string name="toast_import_restored_success">%1$d performances restored successfully!</string>
+    <string name="toast_import_merged_success">%1$d performances merged successfully! Total: %2$d</string>
+    <string name="toast_import_failed_general">Import failed: Invalid JSON.</string>
+
+    <!-- Google Play Billing Toasts & Messages -->
+    <string name="toast_billing_pro_restored">PRO license restored successfully!</string>
+    <string name="toast_billing_no_purchases">No previous purchases found for this Google account.</string>
+    <string name="toast_billing_check_error">Error checking purchases on Google Play (%1$d).</string>
+    <string name="toast_billing_pro_activated">Congratulations! PRO license activated successfully!</string>
+    <string name="toast_billing_already_owned">PRO license already owned! Unlocked successfully.</string>
+    <string name="toast_billing_payment_error">Payment error: %1$s</string>
+    <string name="toast_billing_purchase_failed">Purchase failed: %1$s</string>
+    <string name="toast_billing_connecting">Connecting to Google Play... try again shortly.</string>
+    <string name="toast_billing_product_not_synced">Product not yet synced by Play Store. Attempting to sync...</string>
+    <string name="toast_billing_flow_start_failed">Could not start payment flow: %1$s</string>
+    <string name="toast_billing_connect_error">Error connecting to Google Play (%1$d).</string>
+
+    <!-- MIDI Connection Status Messages -->
+    <string name="midi_status_initializing">Initializing MIDI...</string>
+    <string name="midi_status_disconnected_physically">Device physically disconnected</string>
+    <string name="midi_status_usb_perm_granted_direct">USB permission granted. Connecting in Direct USB Mode...</string>
+    <string name="midi_status_usb_perm_granted">USB permission granted. Connecting...</string>
+    <string name="midi_status_usb_perm_denied">USB permission denied by user.</string>
+    <string name="midi_status_yamaha_disconnected">Yamaha USB keyboard disconnected</string>
+    <string name="midi_status_usb_device_disconnected">USB device disconnected</string>
+    <string name="midi_status_native_unavailable">Native MIDI unavailable. Initializing USB Host mode...</string>
+    <string name="midi_status_requesting_usb_permission">Requesting USB permission for %1$s...</string>
+    <string name="midi_status_usb_keyboard_requesting_perm">USB keyboard detected. Requesting permission...</string>
+    <string name="midi_status_yamaha_detected_connecting">Yamaha USB keyboard detected. Connecting...</string>
+    <string name="midi_status_no_usb_midi_detected">No USB MIDI keyboard detected. Connect USB OTG cable.</string>
+    <string name="midi_status_yamaha_direct_requesting_perm">Yamaha MX detected (Direct USB Mode). Requesting permission...</string>
+    <string name="midi_status_connecting_to_device">Connecting to %1$s...</string>
+    <string name="midi_status_connected_device">Connected: %1$s</string>
+    <string name="midi_status_open_port_failed">Failed to open MIDI port</string>
+    <string name="midi_status_connecting_direct">Connecting to Yamaha MX (Direct USB Mode)...</string>
+    <string name="midi_status_yamaha_direct_disconnected">Yamaha MX (Direct USB) disconnected</string>
+    <string name="midi_status_direct_driver_connect_failed">Failed to connect via Direct USB driver</string>
+    <string name="midi_device_usb_fallback_name">USB MIDI Device #%1$d</string>
+    <string name="midi_device_direct_mode_suffix">%1$s (Direct USB Mode)</string>
+
+    <!-- Foreground Service -->
+    <string name="notification_channel_name">MX Control Live MIDI</string>
+    <string name="notification_channel_desc">Keeps MIDI communication with Yamaha MX active in the background</string>
+    <string name="notification_title">MX Control Active</string>
+    <string name="notification_content_format">Performance: %1$s | Part: %2$s</string>
+    <string name="notification_default_performance">Active Performance</string>
+    <string name="notification_default_part">Part 1: CncrtGrand</string>
+</resources>

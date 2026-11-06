@@ -1,0 +1,63 @@
+================================================================================
+MX CONTROL - GUIA TÉCNICO, IDENTIFICADORES E DADOS DE ACESSO
+================================================================================
+
+1. DADOS TÉCNICOS PRINCIPAIS DO APLICATIVO
+--------------------------------------------------------------------------------
+- Nome Oficial: MX Control
+- Application ID (Package Name): com.alexperfeito.mxcontrol
+- Tecnologia: Android Nativo (Kotlin + Jetpack Compose)
+- Arquitetura de Build: Gradle Kotlin DSL (app/build.gradle.kts)
+- Target SDK: 36 (Android 15 / 16)
+- Compile SDK: 36
+- Min SDK: 23 (Android 6.0+)
+- Biblioteca de Faturamento: Play Billing Library v8.0.0 (com.android.billingclient:billing:8.0.0)
+
+2. ASSINATURA DE PRODUÇÃO (KEYSTORE JKS) - CRÍTICO
+--------------------------------------------------------------------------------
+- Arquivo da Chave: app/mxcontrol-release.jks (ou cópia na raiz do projeto)
+- Alias da Chave (Key Alias): mxcontrol
+- Algoritmo: RSA 2048-bit (SHA256withRSA)
+- Validade: 10.000 dias (até 2054)
+* AVISO: Nunca perca este arquivo .jks nem suas credenciais. Sem ele, a Play Store 
+  rejeitará qualquer atualização futura do MX Control. Faça backup em local seguro.
+
+3. MONETIZAÇÃO & PRODUTOS IN-APP (GOOGLE PLAY BILLING)
+--------------------------------------------------------------------------------
+- Tipo de Monetização: Produto Único / In-App Purchase (Compra Vitalícia permanente)
+- ID do Produto (Product ID): mxcontrol_full_license
+- ID da Opção de Compra: compra-vitalicia
+- Preço Base (Brasil): R$ 29,90 (BRL)
+- Distribuição: Disponível em 173 países/regiões com taxa de câmbio calculada
+- Permissão no AndroidManifest: com.android.vending.BILLING
+
+4. REGRAS PARA GERAR E SUBIR ATUALIZAÇÕES
+--------------------------------------------------------------------------------
+Sempre que fizer alterações no código com o Antigravity e for lançar nova versão:
+
+a) Incrementar Versão no app/build.gradle.kts:
+   - Aumentar o versionCode (+1 em relação ao anterior, ex: 2 -> 3).
+   - Ajustar o versionName (ex: "1.0.1" -> "1.0.2").
+
+b) Comando no Terminal para compilar o pacote de lançamento:
+   ./gradlew bundleRelease
+
+c) Local do arquivo final (.aab) gerado:
+   app/build/outputs/bundle/release/app-release.aab (ou MXControl.aab na raiz).
+
+d) Submissão no Google Play Console:
+   - Acessar: Teste interno (para testes prévios) ou Produção (para lançamento geral).
+   - Criar nova versão -> Anexar o .aab recém-gerado.
+   - Notas da versão com tag de idioma:
+     <pt-BR>
+     Notas e novidades desta atualização...
+     </pt-BR>
+   - Revisar e Iniciar lançamento.
+
+5. CONFIGURAÇÕES DE TESTE NO CONSOLE
+--------------------------------------------------------------------------------
+- Testadores Internos: Configurado na aba "Testadores" em Teste interno via lista de e-mails.
+- Testadores de Licença (Comprar de graça/teste):
+  Acessar Menu Geral da Conta Desenvolvedor > Configurações > Testes de licença.
+  Adicionar o e-mail do aparelho e definir a resposta como RESPOND_NORMALLY.
+================================================================================

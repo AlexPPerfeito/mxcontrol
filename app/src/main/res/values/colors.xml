@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="synth_background">#FF121418</color>
+    <color name="synth_surface">#FF1E222B</color>
+    <color name="synth_primary">#FF00BCD4</color>
+    <color name="synth_accent">#FFFF6E40</color>
+    <color name="ic_launcher_background">#FF0B0F19</color>
+</resources>
