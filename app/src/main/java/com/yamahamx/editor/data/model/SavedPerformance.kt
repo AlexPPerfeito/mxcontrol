@@ -210,6 +210,7 @@ data class SavedPerformance(
     val timestamp: Long = System.currentTimeMillis(),
     val part12Link: Boolean = false,
     val masterVolume: Int = 127,
+    val masterEqGains: List<Int> = List(5) { 64 },
     val parts: List<SavedPart>
 ) {
     val formattedDate: String
@@ -236,6 +237,9 @@ data class SavedPerformance(
             put("timestamp", timestamp)
             put("part12Link", part12Link)
             put("masterVolume", masterVolume)
+            val eqArray = JSONArray()
+            masterEqGains.forEach { eqArray.put(it.coerceIn(0, 127)) }
+            put("masterEqGains", eqArray)
             put("parts", partsArray)
         }
     }
@@ -254,6 +258,7 @@ data class SavedPerformance(
                 timestamp = System.currentTimeMillis(),
                 part12Link = state.common.part12Link,
                 masterVolume = state.common.masterVolume,
+                masterEqGains = state.common.masterEqGains,
                 parts = state.parts.map { SavedPart.fromMultiPartState(it) }
             )
         }
@@ -274,6 +279,14 @@ data class SavedPerformance(
                 timestamp = json.optLong("timestamp", System.currentTimeMillis()),
                 part12Link = json.optBoolean("part12Link", false),
                 masterVolume = json.optInt("masterVolume", 127),
+                masterEqGains = run {
+                    val arr = json.optJSONArray("masterEqGains")
+                    if (arr != null && arr.length() == 5) {
+                        List(5) { i -> arr.optInt(i, 64).coerceIn(0, 127) }
+                    } else {
+                        List(5) { 64 }
+                    }
+                },
                 parts = partsList
             )
         }

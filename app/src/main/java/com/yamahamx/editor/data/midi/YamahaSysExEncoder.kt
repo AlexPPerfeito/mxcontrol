@@ -26,6 +26,22 @@ object YamahaSysExEncoder {
     // Multi Common Low Addresses
     const val ADDR_LOW_COMMON_PART_1_2_LINK: Byte = 0x44.toByte()
 
+    // Multi Master EQ Addresses (AddrHigh = 0x36, AddrMid = 0x10)
+    const val ADDR_MID_MASTER_EQ: Byte = 0x10.toByte()
+    const val ADDR_LOW_MEQ_BAND_1_GAIN: Byte = 0x00.toByte() // Low Gain
+    const val ADDR_LOW_MEQ_BAND_2_GAIN: Byte = 0x04.toByte() // Low-Mid Gain
+    const val ADDR_LOW_MEQ_BAND_3_GAIN: Byte = 0x08.toByte() // Mid Gain
+    const val ADDR_LOW_MEQ_BAND_4_GAIN: Byte = 0x0C.toByte() // High-Mid Gain
+    const val ADDR_LOW_MEQ_BAND_5_GAIN: Byte = 0x10.toByte() // High Gain
+
+    private val MASTER_EQ_GAIN_OFFSETS = byteArrayOf(
+        ADDR_LOW_MEQ_BAND_1_GAIN,
+        ADDR_LOW_MEQ_BAND_2_GAIN,
+        ADDR_LOW_MEQ_BAND_3_GAIN,
+        ADDR_LOW_MEQ_BAND_4_GAIN,
+        ADDR_LOW_MEQ_BAND_5_GAIN
+    )
+
     // Multi Part Low Addresses
     const val ADDR_LOW_PART_BANK_MSB: Byte = 0x01.toByte()
     const val ADDR_LOW_PART_BANK_LSB: Byte = 0x02.toByte()
@@ -75,6 +91,53 @@ object YamahaSysExEncoder {
     }
 
     // --- Multi Part Messages (partIndex: 0..15 for Parts 1..16) ---
+
+    /**
+     * Builds the Yamaha MX Master EQ Band Gain SysEx Parameter Change message:
+     * `F0 43 10 7F 17 36 10 <addrLow> <dataByte> F7`
+     *
+     * @param bandIndex 0..4 corresponding to Bands 1..5 (Low, Low-Mid, Mid, High-Mid, High).
+     *   Addresses: Band 1 = 0x00, Band 2 = 0x04, Band 3 = 0x08, Band 4 = 0x0C, Band 5 = 0x10.
+     * @param uiGainValue 0..127 (center 64 = 0.0 dB, 0 = -12.0 dB, 127 = +12.0 dB).
+     *   Mapped to Yamaha MX hardware data byte range 52..76 (0x34..0x4C, center 0x40 = 64 = 0 dB).
+     */
+    fun setMasterEqBandGain(bandIndex: Int, uiGainValue: Int): ByteArray {
+        val clampedBand = bandIndex.coerceIn(0, 4)
+        val addrLow = MASTER_EQ_GAIN_OFFSETS[clampedBand]
+        val clampedUi = uiGainValue.coerceIn(0, 127)
+        val dbOffset = when {
+            clampedUi == 64 -> 0
+            clampedUi > 64 -> kotlin.math.round(((clampedUi - 64) / 63f) * 12f).toInt()
+            else -> kotlin.math.round(((clampedUi - 64) / 64f) * 12f).toInt()
+        }
+        val hardwareByte = (64 + dbOffset).coerceIn(52, 76).toByte()
+        return buildParamChange(ADDR_HIGH_MULTI_COMMON, ADDR_MID_MASTER_EQ, addrLow, hardwareByte)
+    }
+
+    /**
+     * Converts a 0..127 UI EQ fader value (center 64 = 0.0 dB) to decibels (-12.0 .. +12.0 dB) in 0.5 dB steps.
+     */
+    fun rawToEqDb(rawValue: Int): Float {
+        val clamped = rawValue.coerceIn(0, 127)
+        val rawDb = when {
+            clamped == 64 -> 0f
+            clamped > 64 -> ((clamped - 64) / 63f) * 12f
+            else -> ((clamped - 64) / 64f) * 12f
+        }
+        return kotlin.math.round(rawDb * 2f) / 2f
+    }
+
+    /**
+     * Formats a 0..127 UI EQ fader value into a real-time dB label (e.g. "+2.5 dB", "0.0 dB", "-4.0 dB").
+     */
+    fun formatEqGainDb(rawValue: Int): String {
+        val db = rawToEqDb(rawValue)
+        return when {
+            db > 0f -> String.format(java.util.Locale.US, "+%.1f dB", db)
+            db < 0f -> String.format(java.util.Locale.US, "%.1f dB", db)
+            else -> "0.0 dB"
+        }
+    }
 
     fun setPartBankMSB(partIndex: Int, msb: Int): ByteArray {
         val clampedPart = partIndex.coerceIn(0, 15).toByte()

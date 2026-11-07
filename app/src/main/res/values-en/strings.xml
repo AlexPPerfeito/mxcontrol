@@ -127,6 +127,16 @@
     <string name="param_decay">Decay</string>
     <string name="param_release">Release</string>
     <string name="btn_reset_aeg">Reset AEG (64)</string>
+    <string name="section_parametric_eq">PARAMETRIC EQ</string>
+    <string name="btn_eq_graph">GRAPH</string>
+    <string name="eq_band_1_low">Band 1 (Low)</string>
+    <string name="eq_band_2_low_mid">Band 2 (Low-Mid)</string>
+    <string name="eq_band_3_mid">Band 3 (Mid)</string>
+    <string name="eq_band_4_high_mid">Band 4 (High-Mid)</string>
+    <string name="eq_band_5_high">Band 5 (High)</string>
+    <string name="btn_reset_eq_flat">Reset EQ (Flat)</string>
+    <string name="dialog_master_eq_title">MASTER EQ — 5 BANDS</string>
+    <string name="dialog_master_eq_subtitle">Drag nodes (1 to 5) vertically to adjust gain (-12 dB to +12 dB)</string>
 
     <!-- Modulation / Rotary -->
     <string name="section_modulation">MODULATION / ROTARY</string>

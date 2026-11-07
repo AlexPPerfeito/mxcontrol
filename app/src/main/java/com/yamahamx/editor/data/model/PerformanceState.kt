@@ -18,6 +18,9 @@ data class PerformanceState(
     val selectedPart: MultiPartState
         get() = parts.getOrElse(selectedPartIndex) { parts.first() }
 
+    val masterEqGains: List<Int>
+        get() = common.masterEqGains
+
     val focusedPart: MultiPartState
         get() = parts.getOrElse(activeFocusedPartIndex) { parts.first() }
 

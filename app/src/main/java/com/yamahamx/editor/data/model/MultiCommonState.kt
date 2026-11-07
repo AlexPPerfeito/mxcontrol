@@ -6,5 +6,6 @@ package com.yamahamx.editor.data.model
 data class MultiCommonState(
     val part12Link: Boolean = false, // AddrHigh: 0x36, AddrMid: 0x00, AddrLow: 0x44 (0=Off, 1=On)
     val masterVolume: Int = 127,
-    val performanceName: String = "Init Performance"
+    val performanceName: String = "Init Performance",
+    val masterEqGains: List<Int> = List(5) { 64 } // 5-Band Master EQ Gains (0..127, Center 64 = 0.0 dB)
 )

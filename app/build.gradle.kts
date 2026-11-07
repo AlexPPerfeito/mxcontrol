@@ -12,8 +12,8 @@ android {
         applicationId = "com.alexperfeito.mxcontrol"
         minSdk = 24 // Android 7.0 Nougat (exigido pela Proteção Automática do Google Play)
         targetSdk = 36
-        versionCode = 46
-        versionName = "1.3.8"
+        versionCode = 48
+        versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

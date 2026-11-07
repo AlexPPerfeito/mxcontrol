@@ -19,6 +19,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yamahamx.editor.ui.theme.*
@@ -76,12 +77,19 @@ fun FaderControl(
                     color = SynthMutedGray,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .padding(end = 6.dp)
                 )
 
                 // Digital LED-style value box
                 Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
+                        .defaultMinSize(minWidth = 44.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(SynthDarkBackground)
                         .border(1.dp, accentColor.copy(alpha = 0.4f), RoundedCornerShape(4.dp))
@@ -91,8 +99,10 @@ fun FaderControl(
                         text = valueFormatter(value),
                         color = accentColor,
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }

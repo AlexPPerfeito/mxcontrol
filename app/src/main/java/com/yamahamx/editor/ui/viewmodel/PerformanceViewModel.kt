@@ -1081,7 +1081,8 @@ class PerformanceViewModel(
                 common = MultiCommonState(
                     part12Link = performance.part12Link,
                     masterVolume = performance.masterVolume,
-                    performanceName = performance.name
+                    performanceName = performance.name,
+                    masterEqGains = performance.masterEqGains
                 ),
                 selectedPartIndex = state.selectedPartIndex.coerceIn(0, 15),
                 activeFocusedPartIndex = state.activeFocusedPartIndex.coerceIn(0, 15)
@@ -1120,6 +1121,13 @@ class PerformanceViewModel(
 
         // Ensure Part 1-2 Link status is transmitted
         batchMessages.add(YamahaSysExEncoder.setPart12Link(currentState.common.part12Link))
+
+        // Master 5-Band EQ Gains (Multi Common 0x36 0x10 [0x00, 0x04, 0x08, 0x0C, 0x10])
+        currentState.common.masterEqGains.forEachIndexed { bandIdx, gain ->
+            if (bandIdx in 0..4) {
+                batchMessages.add(YamahaSysExEncoder.setMasterEqBandGain(bandIdx, gain))
+            }
+        }
 
         // Multi Part Parameters
         currentState.parts.forEach { part ->
@@ -1837,6 +1845,43 @@ class PerformanceViewModel(
         midiManager.sendKeyedSequence("SOLO_MUTE_UPDATE", messages, delayMs = 5L)
     }
 
+
+    /**
+     * Updates the gain of one of the 5 Master EQ bands (bandIndex: 0..4, gainValue: 0..127, center 64 = 0.0 dB)
+     * and dispatches the Yamaha MX Master EQ Parameter Change SysEx message with throttled buffer protection.
+     */
+    fun setMasterEqBandGain(bandIndex: Int, gainValue: Int) {
+        if (bandIndex !in 0..4) return
+        val clamped = gainValue.coerceIn(0, 127)
+        _uiState.update { state ->
+            val currentGains = state.common.masterEqGains
+            val updatedGains = List(5) { idx ->
+                if (idx == bandIndex) clamped else currentGains.getOrElse(idx) { 64 }
+            }
+            state.copy(common = state.common.copy(masterEqGains = updatedGains))
+        }
+        persistCurrentWorkingState()
+
+        val sysex = YamahaSysExEncoder.setMasterEqBandGain(bandIndex, clamped)
+        midiManager.sendThrottled("MASTER_EQ_BAND_$bandIndex", sysex)
+    }
+
+    /**
+     * Resets all 5 bands of the Master EQ to 0.0 dB (64) and transmits the SysEx reset sequence with safe spacing.
+     */
+    fun resetMasterEq() {
+        val flatGains = List(5) { 64 }
+        _uiState.update { state ->
+            state.copy(common = state.common.copy(masterEqGains = flatGains))
+        }
+        persistCurrentWorkingState()
+
+        val messages = (0..4).map { bandIdx ->
+            YamahaSysExEncoder.setMasterEqBandGain(bandIdx, 64)
+        }
+        midiManager.sendKeyedSequence("MASTER_EQ_RESET", messages, delayMs = 5L)
+    }
+
     fun setPart12Link(enabled: Boolean) {
         _uiState.update { it.copy(common = it.common.copy(part12Link = enabled)) }
         val sysex = YamahaSysExEncoder.setPart12Link(enabled)
@@ -1912,6 +1957,9 @@ class PerformanceViewModel(
             )
         }
         storageRepository.saveLastActiveState(null, 0)
+        (0..4).forEach { bandIdx ->
+            midiManager.sendImmediate(YamahaSysExEncoder.setMasterEqBandGain(bandIdx, 64))
+        }
     }
 
     private fun updatePart(partIndex: Int, transform: (MultiPartState) -> MultiPartState) {

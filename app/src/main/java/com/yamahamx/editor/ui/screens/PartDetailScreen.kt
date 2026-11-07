@@ -48,7 +48,9 @@ import com.yamahamx.editor.data.model.NoteHelper
 import com.yamahamx.editor.data.model.YamahaVoice
 import com.yamahamx.editor.data.repository.MidiLearnableParameter
 import com.yamahamx.editor.ui.components.FaderControl
+import com.yamahamx.editor.data.midi.YamahaSysExEncoder
 import com.yamahamx.editor.ui.components.FilterXyPadDialog
+import com.yamahamx.editor.ui.components.MasterEqGraphDialog
 import com.yamahamx.editor.ui.components.NoteRangeSelector
 import com.yamahamx.editor.ui.components.PanControl
 import com.yamahamx.editor.ui.components.VoiceSelectorDialog
@@ -78,6 +80,9 @@ fun PartDetailScreen(
     onAttackChange: (Int) -> Unit = {},
     onDecayChange: (Int) -> Unit = {},
     onReleaseChange: (Int) -> Unit = {},
+    masterEqGains: List<Int> = List(5) { 64 },
+    onMasterEqBandGainChange: (Int, Int) -> Unit = { _, _ -> },
+    onResetMasterEq: () -> Unit = {},
     onModulationChange: (Int) -> Unit = {},
     onToggleModulationEnabled: (Boolean) -> Unit = {},
     onToggleMute: () -> Unit,
@@ -97,10 +102,12 @@ fun PartDetailScreen(
         configuration.screenWidthDp > configuration.screenHeightDp
     var showVoiceSelectorDialog by remember { mutableStateOf(false) }
     var showFilterXyPadDialog by remember { mutableStateOf(false) }
+    var showMasterEqGraphDialog by remember { mutableStateOf(false) }
     var showChannelMenu by remember { mutableStateOf(false) }
 
     // Independent Collapsible Card states remembered across navigation/recompositions
     var isMixExpanded by rememberSaveable { mutableStateOf(true) }
+    var isEqExpanded by rememberSaveable { mutableStateOf(true) }
     var isFilterExpanded by rememberSaveable { mutableStateOf(true) }
     var isModulationExpanded by rememberSaveable { mutableStateOf(true) }
     var isNoteLimitExpanded by rememberSaveable { mutableStateOf(true) }
@@ -670,6 +677,214 @@ fun PartDetailScreen(
         }
 
         // ===================================================================
+        // ===================================================================
+        // 1B. COLLAPSIBLE CARD: EQ PARAMÉTRICO (5 BANDAS MASTER EQ + GRÁFICO)
+        // ===================================================================
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
+            border = androidx.compose.foundation.BorderStroke(1.dp, SynthCardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp)
+            ) {
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.section_parametric_eq),
+                    expanded = isEqExpanded,
+                    onToggleExpand = { isEqExpanded = !isEqExpanded },
+                    trailingContent = {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = YamahaCyan.copy(alpha = 0.15f),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, YamahaCyan.copy(alpha = 0.7f)),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { showMasterEqGraphDialog = true }
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_eq_graph),
+                                color = YamahaCyan,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                letterSpacing = 0.6.sp,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                )
+
+                AnimatedVisibility(
+                    visible = isEqExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    val eqGains = remember(masterEqGains) {
+                        List(5) { idx -> masterEqGains.getOrElse(idx) { 64 }.coerceIn(0, 127) }
+                    }
+                    val isEqModified = eqGains.any { it != 64 }
+                    val isCompactPortraitEq = !isLandscape || configuration.screenWidthDp < 600
+
+                    if (isCompactPortraitEq) {
+                        // Portrait / Narrow Screens (< 600dp): 100% Full-Width Single-Line Horizontal Rows per Band
+                        val bandTitles = listOf(
+                            stringResource(R.string.eq_band_1_low),
+                            stringResource(R.string.eq_band_2_low_mid),
+                            stringResource(R.string.eq_band_3_mid),
+                            stringResource(R.string.eq_band_4_high_mid),
+                            stringResource(R.string.eq_band_5_high)
+                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (bandIdx in 0..4) {
+                                CompactEqBandHorizontalRow(
+                                    title = bandTitles[bandIdx],
+                                    value = eqGains[bandIdx],
+                                    onValueChange = { onMasterEqBandGainChange(bandIdx, it) }
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = onResetMasterEq,
+                                enabled = isEqModified,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = YamahaCyan,
+                                    disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isEqModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(34.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_reset_eq_flat),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    } else {
+                        // Landscape (>= 600dp): 2-Column Grid Layout
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Row 1: Band 1 (Low) & Band 2 (Low-Mid)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.eq_band_1_low),
+                                    value = eqGains[0],
+                                    range = 0f..127f,
+                                    onValueChange = { onMasterEqBandGainChange(0, it) },
+                                    valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                FaderControl(
+                                    title = stringResource(R.string.eq_band_2_low_mid),
+                                    value = eqGains[1],
+                                    range = 0f..127f,
+                                    onValueChange = { onMasterEqBandGainChange(1, it) },
+                                    valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // Row 2: Band 3 (Mid) & Band 4 (High-Mid)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.eq_band_3_mid),
+                                    value = eqGains[2],
+                                    range = 0f..127f,
+                                    onValueChange = { onMasterEqBandGainChange(2, it) },
+                                    valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                FaderControl(
+                                    title = stringResource(R.string.eq_band_4_high_mid),
+                                    value = eqGains[3],
+                                    range = 0f..127f,
+                                    onValueChange = { onMasterEqBandGainChange(3, it) },
+                                    valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // Row 3: Band 5 (High) & Quick Reset EQ (Flat) Button
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.eq_band_5_high),
+                                    value = eqGains[4],
+                                    range = 0f..127f,
+                                    onValueChange = { onMasterEqBandGainChange(4, it) },
+                                    valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                OutlinedButton(
+                                    onClick = onResetMasterEq,
+                                    enabled = isEqModified,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = YamahaCyan,
+                                        disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isEqModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(34.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.btn_reset_eq_flat),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===================================================================
         // 2. COLLAPSIBLE CARD: FILTRO (TONE GENERATOR) + PAD X/Y + ENVOLTÓRIA (AEG)
         // ===================================================================
         Card(
@@ -1121,6 +1336,16 @@ fun PartDetailScreen(
         )
     }
 
+    // Master EQ 5-Band Interactive Curve Modal Dialog
+    if (showMasterEqGraphDialog) {
+        MasterEqGraphDialog(
+            masterEqGains = masterEqGains,
+            onBandGainChange = onMasterEqBandGainChange,
+            onResetFlat = onResetMasterEq,
+            onDismiss = { showMasterEqGraphDialog = false }
+        )
+    }
+
     // Voice Selector Modal Dialog
     if (showVoiceSelectorDialog) {
         VoiceSelectorDialog(
@@ -1136,5 +1361,138 @@ fun PartDetailScreen(
             onRenameUserVoice = onRenameUserVoice,
             onDismissRequest = { showVoiceSelectorDialog = false }
         )
+    }
+}
+
+
+@Composable
+fun CollapsibleSectionHeader(
+    title: String,
+    expanded: Boolean,
+    onToggleExpand: () -> Unit,
+    modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "section_arrow_rotation"
+    )
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .clip(RoundedCornerShape(6.dp))
+                .clickable { onToggleExpand() }
+                .padding(vertical = 2.dp)
+        ) {
+            Text(
+                text = title,
+                color = SynthLightText,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = YamahaCyan,
+                modifier = Modifier
+                    .size(20.dp)
+                    .rotate(arrowRotation)
+            )
+        }
+
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(8.dp))
+            trailingContent()
+        }
+    }
+}
+
+
+/**
+ * Full-width (100%) compact horizontal EQ band strip for Portrait / Narrow screens:
+ * Band Label on the left, Slider in the middle, and non-wrapping digital dB box ("0.0 dB") on the right.
+ */
+@Composable
+private fun CompactEqBandHorizontalRow(
+    title: String,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(SynthDarkBackground.copy(alpha = 0.65f))
+            .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Left: Band Label
+        Text(
+            text = title.uppercase(),
+            color = SynthMutedGray,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(114.dp)
+        )
+
+        // Middle: Slider
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = 0f..127f,
+            colors = SliderDefaults.colors(
+                thumbColor = SynthLightText,
+                activeTrackColor = YamahaCyan,
+                inactiveTrackColor = SynthFaderTrack
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+        )
+
+        // Right: Digital dB Readout Box ("0.0 dB", "+2.5 dB", "-4.0 dB") — never wraps vertically
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .defaultMinSize(minWidth = 68.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(SynthDarkBackground)
+                .border(
+                    width = 1.dp,
+                    color = if (value != 64) YamahaCyan.copy(alpha = 0.65f) else YamahaCyan.copy(alpha = 0.35f),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .clickable(enabled = value != 64) { onValueChange(64) }
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        ) {
+            Text(
+                text = YamahaSysExEncoder.formatEqGainDb(value),
+                color = if (value != 64) YamahaCyan else SynthLightText,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
     }
 }
