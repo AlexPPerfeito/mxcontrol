@@ -39,6 +39,7 @@ import com.yamahamx.editor.data.model.NoteHelper
 import com.yamahamx.editor.data.model.YamahaVoice
 import com.yamahamx.editor.data.repository.MidiLearnableParameter
 import com.yamahamx.editor.ui.components.FaderControl
+import com.yamahamx.editor.ui.components.FilterXyPadDialog
 import com.yamahamx.editor.ui.components.NoteRangeSelector
 import com.yamahamx.editor.ui.components.PanControl
 import com.yamahamx.editor.ui.components.VoiceSelectorDialog
@@ -83,6 +84,7 @@ fun PartDetailScreen(
     val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE ||
         configuration.screenWidthDp > configuration.screenHeightDp
     var showVoiceSelectorDialog by remember { mutableStateOf(false) }
+    var showFilterXyPadDialog by remember { mutableStateOf(false) }
     var showChannelMenu by remember { mutableStateOf(false) }
 
     val isLayerActive = part.isLayerActive
@@ -612,13 +614,39 @@ fun PartDetailScreen(
                 modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp),
                 verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.section_filter),
-                    color = SynthLightText,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(R.string.section_filter),
+                        color = SynthLightText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = YamahaCyan.copy(alpha = 0.15f),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, YamahaCyan.copy(alpha = 0.7f)),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { showFilterXyPadDialog = true }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.btn_filter_xy_pad),
+                            color = YamahaCyan,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.6.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                        )
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -857,6 +885,19 @@ fun PartDetailScreen(
             highNote = part.noteLimitHigh,
             onRangeChange = onNoteRangeChange,
             modifier = Modifier.fillMaxWidth()
+        )
+    }
+
+    // Filter X/Y Pad Modal Dialog
+    if (showFilterXyPadDialog) {
+        FilterXyPadDialog(
+            partNumber = part.partNumber,
+            voiceName = part.voice.name,
+            cutoff = part.cutoff,
+            resonance = part.resonance,
+            onCutoffChange = onCutoffChange,
+            onResonanceChange = onResonanceChange,
+            onDismiss = { showFilterXyPadDialog = false }
         )
     }
 

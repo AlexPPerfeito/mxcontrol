@@ -166,6 +166,12 @@
     <string name="section_filter">FILTRO (TONE GENERATOR)</string>
     <string name="param_cutoff">Cutoff</string>
     <string name="param_resonance">Resonancia</string>
+    <string name="btn_filter_xy_pad">PAD X/Y</string>
+    <string name="dialog_filter_xy_title">FILTRO — PAD X/Y</string>
+    <string name="dialog_filter_xy_subtitle">Toque o arrastre para controlar Cutoff (X) y Resonancia (Y) en tiempo real</string>
+    <string name="axis_cutoff_x">CUTOFF (X)</string>
+    <string name="axis_resonance_y">RESONANCIA (Y)</string>
+    <string name="btn_filter_reset_center">Reset (64)</string>
 
     <!-- Modulación / Rotary -->
     <string name="section_modulation">MODULACIÓN / ROTARY</string>
