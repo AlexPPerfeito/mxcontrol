@@ -263,6 +263,17 @@
     <string name="dialog_strategy_message">Você já possui %1$d performance(s) cadastrada(s).\n\nDeseja mesclar as novas performances com as existentes ou substituir tudo pelas do backup?</string>
     <string name="btn_strategy_merge">Mesclar / Somar</string>
     <string name="btn_strategy_replace_all">Substituir Tudo</string>
+    <string name="export_file_instructions">Exporte suas performances e setlists em um arquivo .json seguro (inclui todas as 16 partes, Master EQ, envoltória ADSR e splits) ou compartilhe direto como anexo:</string>
+    <string name="export_summary_format">%1$d performance(s) pronta(s) para backup (%2$s KB)</string>
+    <string name="btn_export_json_file">Exportar Arquivo (.json)</string>
+    <string name="btn_share_json_file">Compartilhar Arquivo (.json)</string>
+    <string name="share_backup_chooser_title">Compartilhar Backup MX Control (.json)</string>
+    <string name="toast_export_file_success">Arquivo de backup (.json) salvo com sucesso!</string>
+    <string name="toast_export_file_error">Erro ao salvar arquivo de backup: %1$s</string>
+    <string name="import_file_instructions">Selecione um arquivo de backup (.json) do seu dispositivo para restaurar ou mesclar suas performances e setlists:</string>
+    <string name="btn_import_json_file">Importar Arquivo (.json)</string>
+    <string name="import_file_loaded_status">Arquivo carregado: %1$s (%2$d performance(s) válida(s))</string>
+    <string name="toast_import_file_read_error">Erro ao ler o arquivo selecionado.</string>
 
     <!-- Upgrade to Pro -->
     <string name="pro_badge_lifetime">★ VERSÃO PRO VITALÍCIA</string>

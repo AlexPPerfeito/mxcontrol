@@ -12,7 +12,7 @@ android {
         applicationId = "com.alexperfeito.mxcontrol"
         minSdk = 24 // Android 7.0 Nougat (exigido pela Proteção Automática do Google Play)
         targetSdk = 36
-        versionCode = 48
+        versionCode = 49
         versionName = "1.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

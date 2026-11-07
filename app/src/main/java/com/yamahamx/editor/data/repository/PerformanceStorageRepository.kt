@@ -35,7 +35,24 @@ class PerformanceStorageRepository(private val context: Context) {
          */
         fun parsePerformancesJson(jsonString: String): List<SavedPerformance>? {
             return try {
-                val trimmed = jsonString.trim()
+                val trimmed = jsonString.trim().removePrefix("\uFEFF").trim()
+                if (trimmed.isEmpty()) return null
+                if (trimmed.startsWith("{")) {
+                    val obj = JSONObject(trimmed)
+                    if (obj.has("performances")) {
+                        val arr = obj.getJSONArray("performances")
+                        if (arr.length() == 0) return null
+                        val list = mutableListOf<SavedPerformance>()
+                        for (i in 0 until arr.length()) {
+                            list.add(SavedPerformance.fromJson(arr.getJSONObject(i)))
+                        }
+                        return if (list.isEmpty()) null else list
+                    }
+                    if (obj.has("parts") || obj.has("name")) {
+                        return listOf(SavedPerformance.fromJson(obj))
+                    }
+                    return null
+                }
                 if (trimmed.isEmpty()) return null
                 val jsonArray = JSONArray(trimmed)
                 if (jsonArray.length() == 0) return null

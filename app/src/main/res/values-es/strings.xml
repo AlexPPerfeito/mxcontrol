@@ -300,6 +300,17 @@
     <string name="dialog_strategy_message">Ya tiene %1$d performance(s) registrada(s).\n\n¿Desea combinar las nuevas performances con las existentes o reemplazar todo con la copia de seguridad?</string>
     <string name="btn_strategy_merge">Combinar / Añadir</string>
     <string name="btn_strategy_replace_all">Reemplazar Todo</string>
+    <string name="export_file_instructions">Exporte sus performances y setlists en un archivo .json seguro (incluye las 16 partes, Master EQ, envolvente ADSR y splits) o comparta directamente como adjunto:</string>
+    <string name="export_summary_format">%1$d performance(s) lista(s) para copia de seguridad (%2$s KB)</string>
+    <string name="btn_export_json_file">Exportar Archivo (.json)</string>
+    <string name="btn_share_json_file">Compartir Archivo (.json)</string>
+    <string name="share_backup_chooser_title">Compartir Copia de Seguridad MX Control (.json)</string>
+    <string name="toast_export_file_success">¡Archivo de copia de seguridad (.json) guardado con éxito!</string>
+    <string name="toast_export_file_error">Error al guardar el archivo de respaldo: %1$s</string>
+    <string name="import_file_instructions">Seleccione un archivo de copia de seguridad (.json) de su dispositivo para restaurar o combinar sus performances y setlists:</string>
+    <string name="btn_import_json_file">Importar Archivo (.json)</string>
+    <string name="import_file_loaded_status">Archivo cargado: %1$s (%2$d performance(s) válida(s))</string>
+    <string name="toast_import_file_read_error">Error al leer el archivo seleccionado.</string>
 
     <!-- Upgrade to Pro -->
     <string name="pro_badge_lifetime">★ VERSIÓN PRO DE POR VIDA</string>

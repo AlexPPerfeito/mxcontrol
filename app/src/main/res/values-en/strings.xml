@@ -241,6 +241,17 @@
     <string name="dialog_strategy_message">You already have %1$d performance(s) saved.\n\nDo you want to merge the new performances with existing ones or replace everything with the backup?</string>
     <string name="btn_strategy_merge">Merge / Add</string>
     <string name="btn_strategy_replace_all">Replace All</string>
+    <string name="export_file_instructions">Export your performances and setlists to a safe .json file (includes all 16 parts, Master EQ, ADSR envelope and splits) or share directly as an attachment:</string>
+    <string name="export_summary_format">%1$d performance(s) ready for backup (%2$s KB)</string>
+    <string name="btn_export_json_file">Export File (.json)</string>
+    <string name="btn_share_json_file">Share File (.json)</string>
+    <string name="share_backup_chooser_title">Share MX Control Backup (.json)</string>
+    <string name="toast_export_file_success">Backup file (.json) saved successfully!</string>
+    <string name="toast_export_file_error">Error saving backup file: %1$s</string>
+    <string name="import_file_instructions">Select a backup file (.json) from your device to restore or merge your performances and setlists:</string>
+    <string name="btn_import_json_file">Import File (.json)</string>
+    <string name="import_file_loaded_status">File loaded: %1$s (%2$d valid performance(s))</string>
+    <string name="toast_import_file_read_error">Error reading the selected file.</string>
 
     <!-- Upgrade to Pro -->
     <string name="pro_badge_lifetime">★ LIFETIME PRO VERSION</string>
