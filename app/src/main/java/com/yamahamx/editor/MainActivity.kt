@@ -109,6 +109,9 @@ class MainActivity : ComponentActivity() {
                         onNoteRangeChange = { idx, low, high -> viewModel.setPartNoteLimits(idx, low, high) },
                         onCutoffChange = { idx, cut -> viewModel.setPartCutoff(idx, cut) },
                         onResonanceChange = { idx, res -> viewModel.setPartResonance(idx, res) },
+                        onAttackChange = { idx, att -> viewModel.setPartAttack(idx, att) },
+                        onDecayChange = { idx, dec -> viewModel.setPartDecay(idx, dec) },
+                        onReleaseChange = { idx, rel -> viewModel.setPartRelease(idx, rel) },
                         onModulationChange = { idx, mod -> viewModel.sendModulation(idx, mod) },
                         onToggleMute = { idx -> viewModel.togglePartMute(idx) },
                         onToggleSolo = { idx -> viewModel.togglePartSolo(idx) }

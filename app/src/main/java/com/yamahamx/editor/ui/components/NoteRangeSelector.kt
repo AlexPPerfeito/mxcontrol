@@ -1,21 +1,31 @@
 package com.yamahamx.editor.ui.components
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yamahamx.editor.R
@@ -33,6 +43,8 @@ fun NoteRangeSelector(
     highNote: Int,
     onRangeChange: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
+    expanded: Boolean = true,
+    onToggleExpand: (() -> Unit)? = null,
     initialModel: KeyboardModel? = null,
     onModelChange: ((KeyboardModel) -> Unit)? = null
 ) {
@@ -55,6 +67,11 @@ fun NoteRangeSelector(
         }
     }
 
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "note_range_arrow_rotation"
+    )
+
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
@@ -66,49 +83,111 @@ fun NoteRangeSelector(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 12.dp)
         ) {
-            // Header: Range note names and fine-tuning step buttons
+            // Collapsible Header: Title + Rotating Arrow + Note Range Readout
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .then(
+                        if (onToggleExpand != null) {
+                            Modifier.clickable { onToggleExpand() }
+                        } else {
+                            Modifier
+                        }
+                    )
+                    .padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(R.string.section_note_limit),
-                    color = SynthMutedGray,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f, fill = false)
-                )
+                ) {
+                    Text(
+                        text = stringResource(R.string.section_note_limit),
+                        color = SynthLightText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (onToggleExpand != null) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = YamahaCyan,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(arrowRotation)
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                // Compact range badge always visible in header
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    // Lower Note Limit (Display + Step Buttons)
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(SynthDarkBackground)
+                            .border(1.dp, YamahaCyan.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(SynthDarkBackground)
-                                .border(1.dp, YamahaCyan.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "${NoteHelper.noteNumberToName(lowNote)} ($lowNote)",
-                                color = YamahaCyan,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+                        Text(
+                            text = "${NoteHelper.noteNumberToName(lowNote)} ($lowNote)",
+                            color = YamahaCyan,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
 
-                        Spacer(modifier = Modifier.height(3.dp))
+                    Text(
+                        text = "➔",
+                        color = SynthMutedGray,
+                        fontSize = 11.sp
+                    )
 
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(SynthDarkBackground)
+                            .border(1.dp, YamahaCyan.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "${NoteHelper.noteNumberToName(highNote)} ($highNote)",
+                            color = YamahaCyan,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                ) {
+                    // Fine-tuning step buttons for Lower and Upper limits
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -132,37 +211,6 @@ fun NoteRangeSelector(
                                 }
                             )
                         }
-                    }
-
-                    // Arrow centered between Lower and Upper note blocks
-                    Text(
-                        text = "➔",
-                        color = SynthMutedGray,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(horizontal = 2.dp)
-                    )
-
-                    // Upper Note Limit (Display + Step Buttons)
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(SynthDarkBackground)
-                                .border(1.dp, YamahaCyan.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "${NoteHelper.noteNumberToName(highNote)} ($highNote)",
-                                color = YamahaCyan,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(3.dp))
 
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -188,94 +236,94 @@ fun NoteRangeSelector(
                             )
                         }
                     }
-                }
-            }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
 
-            // RangeSlider for Note Limit Low & High
-            RangeSlider(
-                value = lowNote.toFloat()..highNote.toFloat(),
-                onValueChange = { range ->
-                    onRangeChange(range.start.toInt(), range.endInclusive.toInt())
-                },
-                valueRange = 0f..127f,
-                steps = 126,
-                colors = SliderDefaults.colors(
-                    thumbColor = SynthLightText,
-                    activeTrackColor = YamahaCyan,
-                    inactiveTrackColor = SynthFaderTrack
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+                    // RangeSlider for Note Limit Low & High
+                    RangeSlider(
+                        value = lowNote.toFloat()..highNote.toFloat(),
+                        onValueChange = { range ->
+                            onRangeChange(range.start.toInt(), range.endInclusive.toInt())
+                        },
+                        valueRange = 0f..127f,
+                        steps = 126,
+                        colors = SliderDefaults.colors(
+                            thumbColor = SynthLightText,
+                            activeTrackColor = YamahaCyan,
+                            inactiveTrackColor = SynthFaderTrack
+                        ),
+                        modifier = Modifier.fillMaxWidth()
+                    )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            // Linha 1: Seletor de Modelo de Teclado Físico
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                KeyboardModel.values().forEach { model ->
-                    val isModelSelected = model == selectedModel
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(28.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (isModelSelected) YamahaCyan.copy(alpha = 0.22f)
-                                else SynthDarkBackground.copy(alpha = 0.6f)
-                            )
-                            .border(
-                                width = 1.dp,
-                                color = if (isModelSelected) YamahaCyan else SynthCardBorder,
-                                shape = RoundedCornerShape(6.dp)
-                            )
-                            .clickable {
-                                selectedModel = model
-                                prefs.edit().putString(PREFS_KEYBOARD_MODEL_KEY, model.name).apply()
-                                onModelChange?.invoke(model)
-                            },
-                        contentAlignment = Alignment.Center
+                    // Linha 1: Seletor de Modelo de Teclado Físico
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = model.displayName,
-                            color = if (isModelSelected) YamahaCyan else SynthMutedGray,
-                            fontSize = 11.sp,
-                            fontWeight = if (isModelSelected) FontWeight.Bold else FontWeight.Medium,
-                            maxLines = 1,
-                            softWrap = false
+                        KeyboardModel.values().forEach { model ->
+                            val isModelSelected = model == selectedModel
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(28.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(
+                                        if (isModelSelected) YamahaCyan.copy(alpha = 0.22f)
+                                        else SynthDarkBackground.copy(alpha = 0.6f)
+                                    )
+                                    .border(
+                                        width = 1.dp,
+                                        color = if (isModelSelected) YamahaCyan else SynthCardBorder,
+                                        shape = RoundedCornerShape(6.dp)
+                                    )
+                                    .clickable {
+                                        selectedModel = model
+                                        prefs.edit().putString(PREFS_KEYBOARD_MODEL_KEY, model.name).apply()
+                                        onModelChange?.invoke(model)
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = model.displayName,
+                                    color = if (isModelSelected) YamahaCyan else SynthMutedGray,
+                                    fontSize = 11.sp,
+                                    fontWeight = if (isModelSelected) FontWeight.Bold else FontWeight.Medium,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Linha 2: Ações Contextuais de Split (Full / Lower = 1ª metade / Upper = 2ª metade)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        PresetSplitButton(
+                            text = selectedModel.fullLabel,
+                            isSelected = lowNote == selectedModel.fullLow && highNote == selectedModel.fullHigh,
+                            onClick = { onRangeChange(selectedModel.fullLow, selectedModel.fullHigh) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        PresetSplitButton(
+                            text = selectedModel.lowerLabel,
+                            isSelected = lowNote == selectedModel.lowerLow && highNote == selectedModel.lowerHigh,
+                            onClick = { onRangeChange(selectedModel.lowerLow, selectedModel.lowerHigh) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        PresetSplitButton(
+                            text = selectedModel.upperLabel,
+                            isSelected = lowNote == selectedModel.upperLow && highNote == selectedModel.upperHigh,
+                            onClick = { onRangeChange(selectedModel.upperLow, selectedModel.upperHigh) },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Linha 2: Ações Contextuais de Split (Full / Lower = 1ª metade / Upper = 2ª metade)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                PresetSplitButton(
-                    text = selectedModel.fullLabel,
-                    isSelected = lowNote == selectedModel.fullLow && highNote == selectedModel.fullHigh,
-                    onClick = { onRangeChange(selectedModel.fullLow, selectedModel.fullHigh) },
-                    modifier = Modifier.weight(1f)
-                )
-                PresetSplitButton(
-                    text = selectedModel.lowerLabel,
-                    isSelected = lowNote == selectedModel.lowerLow && highNote == selectedModel.lowerHigh,
-                    onClick = { onRangeChange(selectedModel.lowerLow, selectedModel.lowerHigh) },
-                    modifier = Modifier.weight(1f)
-                )
-                PresetSplitButton(
-                    text = selectedModel.upperLabel,
-                    isSelected = lowNote == selectedModel.upperLow && highNote == selectedModel.upperHigh,
-                    onClick = { onRangeChange(selectedModel.upperLow, selectedModel.upperHigh) },
-                    modifier = Modifier.weight(1f)
-                )
             }
         }
     }

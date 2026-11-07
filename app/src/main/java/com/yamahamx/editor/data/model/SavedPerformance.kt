@@ -81,6 +81,9 @@ data class SavedPart(
     val noteLimitHigh: Int = 127,
     val cutoff: Int = 64,
     val resonance: Int = 64,
+    val attack: Int = 64,
+    val decay: Int = 64,
+    val release: Int = 64,
     val modulation: Int = 0,
     val isMuted: Boolean = false,
     val isSolo: Boolean = false,
@@ -102,6 +105,9 @@ data class SavedPart(
             noteLimitHigh = noteLimitHigh,
             cutoff = cutoff,
             resonance = resonance,
+            attack = attack.coerceIn(0, 127),
+            decay = decay.coerceIn(0, 127),
+            release = release.coerceIn(0, 127),
             modulation = modulation,
             isModulationEnabled = isModulationEnabled,
             isMuted = isMuted,
@@ -124,6 +130,9 @@ data class SavedPart(
             put("noteLimitHigh", noteLimitHigh)
             put("cutoff", cutoff)
             put("resonance", resonance)
+            put("attack", attack)
+            put("decay", decay)
+            put("release", release)
             put("modulation", modulation)
             put("isModulationEnabled", isModulationEnabled)
             put("isMuted", isMuted)
@@ -148,6 +157,9 @@ data class SavedPart(
                 noteLimitHigh = state.noteLimitHigh,
                 cutoff = state.cutoff,
                 resonance = state.resonance,
+                attack = state.attack.coerceIn(0, 127),
+                decay = state.decay.coerceIn(0, 127),
+                release = state.release.coerceIn(0, 127),
                 modulation = state.modulation,
                 isModulationEnabled = state.isModulationEnabled,
                 isMuted = state.isMuted,
@@ -174,6 +186,9 @@ data class SavedPart(
                 noteLimitHigh = json.optInt("noteLimitHigh", 127),
                 cutoff = json.optInt("cutoff", 64),
                 resonance = json.optInt("resonance", 64),
+                attack = json.optInt("attack", 64).coerceIn(0, 127),
+                decay = json.optInt("decay", 64).coerceIn(0, 127),
+                release = json.optInt("release", 64).coerceIn(0, 127),
                 modulation = json.optInt("modulation", 0),
                 isModulationEnabled = json.optBoolean("isModulationEnabled", true),
                 isMuted = isMuted,

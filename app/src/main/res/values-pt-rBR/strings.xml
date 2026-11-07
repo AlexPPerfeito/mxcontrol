@@ -122,6 +122,11 @@
     <string name="axis_cutoff_x">CUTOFF (X)</string>
     <string name="axis_resonance_y">RESONANCE (Y)</string>
     <string name="btn_filter_reset_center">Reset (64)</string>
+    <string name="section_envelope_aeg">ENVOLTÓRIA (AEG)</string>
+    <string name="param_attack">Attack</string>
+    <string name="param_decay">Decay</string>
+    <string name="param_release">Release</string>
+    <string name="btn_reset_aeg">Reset AEG (64)</string>
 
     <!-- Modulação / Rotary -->
     <string name="section_modulation">MODULATION / ROTARY</string>

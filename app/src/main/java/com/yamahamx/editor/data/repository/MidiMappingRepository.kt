@@ -18,7 +18,10 @@ enum class MidiLearnableParameter(val defaultCc: Int, val displayName: String) {
     CUTOFF(defaultCc = 74, displayName = "Cutoff"),
     RESONANCE(defaultCc = 71, displayName = "Resonance"),
     REVERB_SEND(defaultCc = 91, displayName = "Reverb Send"),
-    CHORUS_SEND(defaultCc = 93, displayName = "Chorus Send");
+    CHORUS_SEND(defaultCc = 93, displayName = "Chorus Send"),
+    ATTACK(defaultCc = 73, displayName = "Attack"),
+    DECAY(defaultCc = 75, displayName = "Decay"),
+    RELEASE(defaultCc = 72, displayName = "Release");
 
     companion object {
         fun fromDefaultCc(cc: Int): MidiLearnableParameter? {
@@ -343,6 +346,9 @@ class MidiMappingRepository(
             MidiLearnableParameter.RESONANCE -> part.copy(resonance = value.coerceIn(0, 127))
             MidiLearnableParameter.REVERB_SEND -> part.copy(reverbSend = value.coerceIn(0, 127))
             MidiLearnableParameter.CHORUS_SEND -> part.copy(chorusSend = value.coerceIn(0, 127))
+            MidiLearnableParameter.ATTACK -> part.copy(attack = value.coerceIn(0, 127))
+            MidiLearnableParameter.DECAY -> part.copy(decay = value.coerceIn(0, 127))
+            MidiLearnableParameter.RELEASE -> part.copy(release = value.coerceIn(0, 127))
         }
     }
 

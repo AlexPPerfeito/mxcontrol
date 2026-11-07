@@ -59,6 +59,30 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    applicationVariants.all {
+        val variant = this
+        val verName = variant.versionName ?: defaultConfig.versionName ?: "1.0.0"
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                output.outputFileName = "mxcontrol-${variant.name}-v${verName}.apk"
+            }
+    }
+}
+
+afterEvaluate {
+    val verName = android.defaultConfig.versionName ?: "1.0.0"
+    tasks.matching { it.name == "signReleaseBundle" || it.name == "bundleRelease" }.configureEach {
+        doLast {
+            val bundleDir = layout.buildDirectory.dir("outputs/bundle/release").get().asFile
+            val defaultAab = File(bundleDir, "app-release.aab")
+            val targetAab = File(bundleDir, "mxcontrol-release-v${verName}.aab")
+            if (defaultAab.exists()) {
+                defaultAab.copyTo(targetAab, overwrite = true)
+            }
+        }
+    }
 }
 
 dependencies {

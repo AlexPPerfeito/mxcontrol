@@ -753,6 +753,33 @@ class PerformanceViewModel(
                     midiManager.sendThrottled("PART_${partIndex}_CHO", sysex)
                 }
             }
+            MidiLearnableParameter.ATTACK -> {
+                updatePartFromExternalMidi(partIndex) { it.copy(attack = faderValue) }
+                val cc = YamahaSysExEncoder.createControlChangeMessage(targetChannel, 73, faderValue)
+                if (isFromBluetooth) {
+                    midiManager.sendThrottledUsbOnly("PART_${partIndex}_CC73", cc)
+                } else {
+                    midiManager.sendThrottled("PART_${partIndex}_CC73", cc)
+                }
+            }
+            MidiLearnableParameter.DECAY -> {
+                updatePartFromExternalMidi(partIndex) { it.copy(decay = faderValue) }
+                val cc = YamahaSysExEncoder.createControlChangeMessage(targetChannel, 75, faderValue)
+                if (isFromBluetooth) {
+                    midiManager.sendThrottledUsbOnly("PART_${partIndex}_CC75", cc)
+                } else {
+                    midiManager.sendThrottled("PART_${partIndex}_CC75", cc)
+                }
+            }
+            MidiLearnableParameter.RELEASE -> {
+                updatePartFromExternalMidi(partIndex) { it.copy(release = faderValue) }
+                val cc = YamahaSysExEncoder.createControlChangeMessage(targetChannel, 72, faderValue)
+                if (isFromBluetooth) {
+                    midiManager.sendThrottledUsbOnly("PART_${partIndex}_CC72", cc)
+                } else {
+                    midiManager.sendThrottled("PART_${partIndex}_CC72", cc)
+                }
+            }
         }
     }
 
@@ -1137,6 +1164,13 @@ class PerformanceViewModel(
             // 8. Filter Cutoff & Resonance
             batchMessages.add(YamahaSysExEncoder.setPartCutoff(part.partIndex, part.cutoff))
             batchMessages.add(YamahaSysExEncoder.setPartResonance(part.partIndex, part.resonance))
+
+            // 8b. Envelope (AEG): Attack (CC 73), Decay (CC 75), Release (CC 72)
+            if (part.receiveChannel in 0..15 && (part.attack != 64 || part.decay != 64 || part.release != 64)) {
+                batchMessages.add(YamahaSysExEncoder.createControlChangeMessage(part.receiveChannel, 73, part.attack))
+                batchMessages.add(YamahaSysExEncoder.createControlChangeMessage(part.receiveChannel, 75, part.decay))
+                batchMessages.add(YamahaSysExEncoder.createControlChangeMessage(part.receiveChannel, 72, part.release))
+            }
 
             // 9. Expression Pedal (CC 11) Isolation:
             //    ON exclusively for intentional Layer parts (e.g. Part 2 / Strings);
@@ -1641,6 +1675,48 @@ class PerformanceViewModel(
 
         val sysex = YamahaSysExEncoder.setPartResonance(partIndex, clamped)
         midiManager.sendThrottled("PART_${partIndex}_RESO", sysex)
+    }
+
+    /**
+     * Sends MIDI CC 73 (Attack Time) on the selected part's MIDI channel (0..127, neutral center = 64).
+     */
+    fun setPartAttack(partIndex: Int, attack: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = attack.coerceIn(0, 127)
+        updatePart(partIndex) { it.copy(attack = clamped) }
+
+        val part = _uiState.value.parts.getOrNull(partIndex)
+        val channel = if (part != null && part.receiveChannel in 0..15) part.receiveChannel else partIndex
+        val msg = YamahaSysExEncoder.createControlChangeMessage(channel, 73, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_CC73", msg)
+    }
+
+    /**
+     * Sends MIDI CC 75 (Decay Time) on the selected part's MIDI channel (0..127, neutral center = 64).
+     */
+    fun setPartDecay(partIndex: Int, decay: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = decay.coerceIn(0, 127)
+        updatePart(partIndex) { it.copy(decay = clamped) }
+
+        val part = _uiState.value.parts.getOrNull(partIndex)
+        val channel = if (part != null && part.receiveChannel in 0..15) part.receiveChannel else partIndex
+        val msg = YamahaSysExEncoder.createControlChangeMessage(channel, 75, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_CC75", msg)
+    }
+
+    /**
+     * Sends MIDI CC 72 (Release Time) on the selected part's MIDI channel (0..127, neutral center = 64).
+     */
+    fun setPartRelease(partIndex: Int, release: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = release.coerceIn(0, 127)
+        updatePart(partIndex) { it.copy(release = clamped) }
+
+        val part = _uiState.value.parts.getOrNull(partIndex)
+        val channel = if (part != null && part.receiveChannel in 0..15) part.receiveChannel else partIndex
+        val msg = YamahaSysExEncoder.createControlChangeMessage(channel, 72, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_CC72", msg)
     }
 
     /**

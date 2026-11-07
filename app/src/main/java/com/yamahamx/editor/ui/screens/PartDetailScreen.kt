@@ -1,6 +1,12 @@
 package com.yamahamx.editor.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,14 +22,17 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FlashOn
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -66,6 +75,9 @@ fun PartDetailScreen(
     onNoteRangeChange: (Int, Int) -> Unit,
     onCutoffChange: (Int) -> Unit,
     onResonanceChange: (Int) -> Unit,
+    onAttackChange: (Int) -> Unit = {},
+    onDecayChange: (Int) -> Unit = {},
+    onReleaseChange: (Int) -> Unit = {},
     onModulationChange: (Int) -> Unit = {},
     onToggleModulationEnabled: (Boolean) -> Unit = {},
     onToggleMute: () -> Unit,
@@ -86,6 +98,25 @@ fun PartDetailScreen(
     var showVoiceSelectorDialog by remember { mutableStateOf(false) }
     var showFilterXyPadDialog by remember { mutableStateOf(false) }
     var showChannelMenu by remember { mutableStateOf(false) }
+
+    // Independent Collapsible Card states remembered across navigation/recompositions
+    var isMixExpanded by rememberSaveable { mutableStateOf(true) }
+    var isFilterExpanded by rememberSaveable { mutableStateOf(true) }
+    var isModulationExpanded by rememberSaveable { mutableStateOf(true) }
+    var isNoteLimitExpanded by rememberSaveable { mutableStateOf(true) }
+
+    val mixArrowRotation by animateFloatAsState(
+        targetValue = if (isMixExpanded) 180f else 0f,
+        label = "mix_arrow_rotation"
+    )
+    val filterArrowRotation by animateFloatAsState(
+        targetValue = if (isFilterExpanded) 180f else 0f,
+        label = "filter_arrow_rotation"
+    )
+    val modArrowRotation by animateFloatAsState(
+        targetValue = if (isModulationExpanded) 180f else 0f,
+        label = "mod_arrow_rotation"
+    )
 
     val isLayerActive = part.isLayerActive
 
@@ -475,7 +506,9 @@ fun PartDetailScreen(
             }
         }
 
-        // Faders Section: Volume, Pan, Transpose, Reverb, Chorus
+        // ===================================================================
+        // 1. COLLAPSIBLE CARD: MIX & EFEITOS
+        // ===================================================================
         Card(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
@@ -483,127 +516,162 @@ fun PartDetailScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp),
-                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp)
+                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp)
             ) {
-                Text(
-                    text = stringResource(R.string.section_mix_effects),
-                    color = SynthLightText,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-
-                // Volume & Pan Row
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { isMixExpanded = !isMixExpanded }
+                        .padding(vertical = 2.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Volume Fader
-                    FaderControl(
-                        title = stringResource(R.string.param_volume),
-                        value = part.volume,
-                        range = 0f..127f,
-                        onValueChange = onVolumeChange,
-                        accentColor = YamahaCyan,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.VOLUME) },
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // Pan Knob / Fader
-                    PanControl(
-                        panValue = part.pan,
-                        onPanChange = onPanChange,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.PAN) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                // Note Shift (Transpose)
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    FaderControl(
-                        title = stringResource(R.string.param_transpose),
-                        value = part.noteShift,
-                        range = 40f..88f,
-                        onValueChange = onNoteShiftChange,
-                        valueFormatter = { NoteHelper.formatNoteShift(it) },
-                        accentColor = SynthAmber,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    // Quick Octave Shift Buttons
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedButton(
-                            onClick = { onNoteShiftChange((part.noteShift - 12).coerceIn(40, 88)) },
-                            enabled = part.noteShift > 40,
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = stringResource(R.string.section_mix_effects),
+                            color = SynthLightText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = YamahaCyan,
                             modifier = Modifier
-                                .weight(1f)
-                                .height(32.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(stringResource(R.string.btn_octave_down_full), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        }
-
-                        OutlinedButton(
-                            onClick = { onNoteShiftChange(64) },
-                            enabled = part.noteShift != 64,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(32.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(stringResource(R.string.btn_octave_reset), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        }
-
-                        OutlinedButton(
-                            onClick = { onNoteShiftChange((part.noteShift + 12).coerceIn(40, 88)) },
-                            enabled = part.noteShift < 88,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(32.dp),
-                            contentPadding = PaddingValues(0.dp)
-                        ) {
-                            Text(stringResource(R.string.btn_octave_up_full), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
-                        }
+                                .size(20.dp)
+                                .rotate(mixArrowRotation)
+                        )
                     }
                 }
 
-                // Reverb & Chorus Sends
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                AnimatedVisibility(
+                    visible = isMixExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    FaderControl(
-                        title = stringResource(R.string.param_reverb_send),
-                        value = part.reverbSend,
-                        range = 0f..127f,
-                        onValueChange = onReverbSendChange,
-                        accentColor = YamahaCyanDim,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.REVERB_SEND) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = if (isLandscape) 8.dp else 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp)
+                    ) {
+                        // Volume & Pan Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            // Volume Fader
+                            FaderControl(
+                                title = stringResource(R.string.param_volume),
+                                value = part.volume,
+                                range = 0f..127f,
+                                onValueChange = onVolumeChange,
+                                accentColor = YamahaCyan,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.VOLUME) },
+                                modifier = Modifier.weight(1f)
+                            )
 
-                    FaderControl(
-                        title = stringResource(R.string.param_chorus_send),
-                        value = part.chorusSend,
-                        range = 0f..127f,
-                        onValueChange = onChorusSendChange,
-                        accentColor = YamahaCyanDim,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.CHORUS_SEND) },
-                        modifier = Modifier.weight(1f)
-                    )
+                            // Pan Knob / Fader
+                            PanControl(
+                                panValue = part.pan,
+                                onPanChange = onPanChange,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.PAN) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Note Shift (Transpose)
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            FaderControl(
+                                title = stringResource(R.string.param_transpose),
+                                value = part.noteShift,
+                                range = 40f..88f,
+                                onValueChange = onNoteShiftChange,
+                                valueFormatter = { NoteHelper.formatNoteShift(it) },
+                                accentColor = SynthAmber,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            // Quick Octave Shift Buttons
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onNoteShiftChange((part.noteShift - 12).coerceIn(40, 88)) },
+                                    enabled = part.noteShift > 40,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(32.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text(stringResource(R.string.btn_octave_down_full), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { onNoteShiftChange(64) },
+                                    enabled = part.noteShift != 64,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(32.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text(stringResource(R.string.btn_octave_reset), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+
+                                OutlinedButton(
+                                    onClick = { onNoteShiftChange((part.noteShift + 12).coerceIn(40, 88)) },
+                                    enabled = part.noteShift < 88,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(32.dp),
+                                    contentPadding = PaddingValues(0.dp)
+                                ) {
+                                    Text(stringResource(R.string.btn_octave_up_full), fontSize = 11.sp, fontWeight = FontWeight.SemiBold)
+                                }
+                            }
+                        }
+
+                        // Reverb & Chorus Sends
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            FaderControl(
+                                title = stringResource(R.string.param_reverb_send),
+                                value = part.reverbSend,
+                                range = 0f..127f,
+                                onValueChange = onReverbSendChange,
+                                accentColor = YamahaCyanDim,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.REVERB_SEND) },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FaderControl(
+                                title = stringResource(R.string.param_chorus_send),
+                                value = part.chorusSend,
+                                range = 0f..127f,
+                                onValueChange = onChorusSendChange,
+                                accentColor = YamahaCyanDim,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.CHORUS_SEND) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Filter Section: Cutoff & Resonance
+        // ===================================================================
+        // 2. COLLAPSIBLE CARD: FILTRO (TONE GENERATOR) + PAD X/Y + ENVOLTÓRIA (AEG)
+        // ===================================================================
         Card(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
@@ -611,21 +679,42 @@ fun PartDetailScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp),
-                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp)
+                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp)
             ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { isFilterExpanded = !isFilterExpanded }
+                        .padding(vertical = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stringResource(R.string.section_filter),
-                        color = SynthLightText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.section_filter),
+                            color = SynthLightText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = YamahaCyan,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(filterArrowRotation)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
 
                     Surface(
                         shape = RoundedCornerShape(6.dp),
@@ -648,34 +737,133 @@ fun PartDetailScreen(
                     }
                 }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                AnimatedVisibility(
+                    visible = isFilterExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    FaderControl(
-                        title = stringResource(R.string.param_cutoff),
-                        value = part.cutoff,
-                        range = 0f..127f,
-                        onValueChange = onCutoffChange,
-                        accentColor = YamahaCyan,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.CUTOFF) },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = if (isLandscape) 8.dp else 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 12.dp)
+                    ) {
+                        // Filter Cutoff & Resonance Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            FaderControl(
+                                title = stringResource(R.string.param_cutoff),
+                                value = part.cutoff,
+                                range = 0f..127f,
+                                onValueChange = onCutoffChange,
+                                accentColor = YamahaCyan,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.CUTOFF) },
+                                modifier = Modifier.weight(1f)
+                            )
 
-                    FaderControl(
-                        title = stringResource(R.string.param_resonance),
-                        value = part.resonance,
-                        range = 0f..127f,
-                        onValueChange = onResonanceChange,
-                        accentColor = YamahaCyan,
-                        onLongClick = { onStartMidiLearn(MidiLearnableParameter.RESONANCE) },
-                        modifier = Modifier.weight(1f)
-                    )
+                            FaderControl(
+                                title = stringResource(R.string.param_resonance),
+                                value = part.resonance,
+                                range = 0f..127f,
+                                onValueChange = onResonanceChange,
+                                accentColor = YamahaCyan,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.RESONANCE) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        HorizontalDivider(color = SynthCardBorder, thickness = 1.dp)
+
+                        // Envelope (AEG: Attack, Decay, Release) Sub-header & Quick Reset
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.section_envelope_aeg),
+                                color = SynthMutedGray,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 0.8.sp
+                            )
+
+                            val isAegModified = part.attack != 64 || part.decay != 64 || part.release != 64
+                            OutlinedButton(
+                                onClick = {
+                                    onAttackChange(64)
+                                    onDecayChange(64)
+                                    onReleaseChange(64)
+                                },
+                                enabled = isAegModified,
+                                shape = RoundedCornerShape(6.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = YamahaCyan,
+                                    disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isAegModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                                ),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                                modifier = Modifier.height(26.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_reset_aeg),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+
+                        // Attack (CC 73) & Decay (CC 75) Row
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            FaderControl(
+                                title = stringResource(R.string.param_attack),
+                                value = part.attack,
+                                range = 0f..127f,
+                                onValueChange = onAttackChange,
+                                accentColor = YamahaCyan,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.ATTACK) },
+                                modifier = Modifier.weight(1f)
+                            )
+
+                            FaderControl(
+                                title = stringResource(R.string.param_decay),
+                                value = part.decay,
+                                range = 0f..127f,
+                                onValueChange = onDecayChange,
+                                accentColor = YamahaCyan,
+                                onLongClick = { onStartMidiLearn(MidiLearnableParameter.DECAY) },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        // Release (CC 72) Fader
+                        FaderControl(
+                            title = stringResource(R.string.param_release),
+                            value = part.release,
+                            range = 0f..127f,
+                            onValueChange = onReleaseChange,
+                            accentColor = YamahaCyan,
+                            onLongClick = { onStartMidiLearn(MidiLearnableParameter.RELEASE) },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }
 
-        // Modulation / Rotary Section: MIDI CC 1
+        // ===================================================================
+        // 3. COLLAPSIBLE CARD: MODULATION / ROTARY (MIDI CC 1)
+        // ===================================================================
         val triggerModLearn = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             onStartMidiLearn(MidiLearnableParameter.MODULATION)
@@ -694,61 +882,64 @@ fun PartDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(if (isLandscape) 8.dp else 12.dp),
-                verticalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 10.dp)
+                    .padding(if (isLandscape) 8.dp else 12.dp)
             ) {
-                // Header Row: Title, On/Bypass Switch & Continuous Digital MOD Value Display (Tap to Reset)
+                // Header Row: Title + Rotating Arrow + On/Bypass Switch & Continuous Digital MOD Value Display
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f, fill = false)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable { isModulationExpanded = !isModulationExpanded }
+                            .padding(vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.section_modulation),
+                            color = SynthLightText,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = YamahaCyan,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .rotate(modArrowRotation)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        // On / Bypass toggle badge
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = if (part.isModulationEnabled) YamahaCyan.copy(alpha = 0.2f) else Color(0xFF2E1A1E),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (part.isModulationEnabled) YamahaCyan else SynthRed.copy(alpha = 0.7f)
+                            ),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { onToggleModulationEnabled(!part.isModulationEnabled) }
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
                             Text(
-                                text = stringResource(R.string.section_modulation),
-                                color = SynthLightText,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                letterSpacing = 1.sp,
+                                text = if (part.isModulationEnabled) stringResource(R.string.mod_rcv_on) else stringResource(R.string.mod_bypass),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Black,
+                                color = if (part.isModulationEnabled) YamahaCyan else SynthRed,
                                 maxLines = 1,
                                 softWrap = false
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            // On / Bypass toggle badge
-                            Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = if (part.isModulationEnabled) YamahaCyan.copy(alpha = 0.2f) else Color(0xFF2E1A1E),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (part.isModulationEnabled) YamahaCyan else SynthRed.copy(alpha = 0.7f)
-                                ),
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .clickable { onToggleModulationEnabled(!part.isModulationEnabled) }
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = if (part.isModulationEnabled) stringResource(R.string.mod_rcv_on) else stringResource(R.string.mod_bypass),
-                                    fontSize = 9.sp,
-                                    fontWeight = FontWeight.Black,
-                                    color = if (part.isModulationEnabled) YamahaCyan else SynthRed,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
-                            }
                         }
-                        Text(
-                            text = if (part.isModulationEnabled)
-                                stringResource(R.string.mod_desc_enabled)
-                            else
-                                stringResource(R.string.mod_desc_bypass),
-                            color = if (part.isModulationEnabled) SynthMutedGray else SynthRed.copy(alpha = 0.85f),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            softWrap = false
-                        )
                     }
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -826,64 +1017,93 @@ fun PartDetailScreen(
                     }
                 }
 
-                // Slider with fine-tuning buttons (- / +)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                AnimatedVisibility(
+                    visible = isModulationExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    IconButton(
-                        onClick = { onModulationChange((part.modulation - 1).coerceIn(0, 127)) },
-                        enabled = part.isModulationEnabled && part.modulation > 0,
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Remove,
-                            contentDescription = stringResource(R.string.cd_mod_decrease),
-                            tint = if (part.isModulationEnabled && part.modulation > 0) SynthAmber else SynthMutedGray.copy(alpha = 0.3f),
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-
-                    Slider(
-                        value = part.modulation.toFloat(),
-                        onValueChange = { onModulationChange(it.toInt()) },
-                        valueRange = 0f..127f,
-                        enabled = part.isModulationEnabled,
-                        colors = SliderDefaults.colors(
-                            thumbColor = if (part.isModulationEnabled) SynthLightText else SynthMutedGray.copy(alpha = 0.4f),
-                            activeTrackColor = if (part.isModulationEnabled) SynthAmber else Color(0xFF2A241E),
-                            inactiveTrackColor = SynthFaderTrack,
-                            disabledThumbColor = Color(0xFF384358),
-                            disabledActiveTrackColor = Color(0xFF222838),
-                            disabledInactiveTrackColor = Color(0xFF141924)
-                        ),
+                    Column(
                         modifier = Modifier
-                            .weight(1f)
-                            .height(28.dp)
-                            .sliderLongPressDetector(onLongPress = triggerModLearn)
-                    )
-
-                    IconButton(
-                        onClick = { onModulationChange((part.modulation + 1).coerceIn(0, 127)) },
-                        enabled = part.isModulationEnabled && part.modulation < 127,
-                        modifier = Modifier.size(32.dp)
+                            .fillMaxWidth()
+                            .padding(top = if (isLandscape) 6.dp else 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 6.dp else 8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = stringResource(R.string.cd_mod_increase),
-                            tint = if (part.isModulationEnabled && part.modulation < 127) SynthAmber else SynthMutedGray.copy(alpha = 0.3f),
-                            modifier = Modifier.size(18.dp)
+                        Text(
+                            text = if (part.isModulationEnabled)
+                                stringResource(R.string.mod_desc_enabled)
+                            else
+                                stringResource(R.string.mod_desc_bypass),
+                            color = if (part.isModulationEnabled) SynthMutedGray else SynthRed.copy(alpha = 0.85f),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            softWrap = false
                         )
+
+                        // Slider with fine-tuning buttons (- / +)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { onModulationChange((part.modulation - 1).coerceIn(0, 127)) },
+                                enabled = part.isModulationEnabled && part.modulation > 0,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Remove,
+                                    contentDescription = stringResource(R.string.cd_mod_decrease),
+                                    tint = if (part.isModulationEnabled && part.modulation > 0) SynthAmber else SynthMutedGray.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+
+                            Slider(
+                                value = part.modulation.toFloat(),
+                                onValueChange = { onModulationChange(it.toInt()) },
+                                valueRange = 0f..127f,
+                                enabled = part.isModulationEnabled,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = if (part.isModulationEnabled) SynthLightText else SynthMutedGray.copy(alpha = 0.4f),
+                                    activeTrackColor = if (part.isModulationEnabled) SynthAmber else Color(0xFF2A241E),
+                                    inactiveTrackColor = SynthFaderTrack,
+                                    disabledThumbColor = Color(0xFF384358),
+                                    disabledActiveTrackColor = Color(0xFF222838),
+                                    disabledInactiveTrackColor = Color(0xFF141924)
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(28.dp)
+                                    .sliderLongPressDetector(onLongPress = triggerModLearn)
+                            )
+
+                            IconButton(
+                                onClick = { onModulationChange((part.modulation + 1).coerceIn(0, 127)) },
+                                enabled = part.isModulationEnabled && part.modulation < 127,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = stringResource(R.string.cd_mod_increase),
+                                    tint = if (part.isModulationEnabled && part.modulation < 127) SynthAmber else SynthMutedGray.copy(alpha = 0.3f),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // Keyboard Split Range Selector
+        // ===================================================================
+        // 4. COLLAPSIBLE CARD: NOTE LIMIT / KEYBOARD SPLIT
+        // ===================================================================
         NoteRangeSelector(
             lowNote = part.noteLimitLow,
             highNote = part.noteLimitHigh,
             onRangeChange = onNoteRangeChange,
+            expanded = isNoteLimitExpanded,
+            onToggleExpand = { isNoteLimitExpanded = !isNoteLimitExpanded },
             modifier = Modifier.fillMaxWidth()
         )
     }

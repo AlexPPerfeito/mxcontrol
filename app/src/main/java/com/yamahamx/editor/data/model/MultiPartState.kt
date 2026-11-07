@@ -17,6 +17,9 @@ data class MultiPartState(
     val noteLimitHigh: Int = 127, // 0..127 (SysEx AddrLow: 0x09)
     val cutoff: Int = 64, // 0..127 (SysEx AddrLow: 0x2D)
     val resonance: Int = 64, // 0..127 (SysEx AddrLow: 0x2E)
+    val attack: Int = 64, // 0..127 (MIDI CC 73 - AEG Attack Time, Center = 64)
+    val decay: Int = 64, // 0..127 (MIDI CC 75 - AEG Decay Time, Center = 64)
+    val release: Int = 64, // 0..127 (MIDI CC 72 - AEG Release Time, Center = 64)
     val modulation: Int = 0, // 0..127 (MIDI CC 1)
     val isModulationEnabled: Boolean = true, // Receive Switch: Modulation Wheel (SysEx AddrLow: 0x38)
     val isMuted: Boolean = false,
