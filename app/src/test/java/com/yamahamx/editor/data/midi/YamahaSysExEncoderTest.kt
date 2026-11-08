@@ -360,26 +360,83 @@ class YamahaSysExEncoderTest {
 
     @Test
     fun testInsertionPartSwitchSysEx() {
-        // Test Part 1 enabled -> bit 15 set -> 0x8000 -> nibbles 8, 0, 0, 0
-        // Address 36 00 4C
+        // Official Yamaha Data List Page 60:
+        // 4th byte: bit 0 = Part 1, bit 1 = Part 2, ..., bit 6 = Part 7
+        // 3rd byte: bit 0 = Part 8, ..., bit 6 = Part 14
+        // 2nd byte: bit 0 = Part 15, bit 1 = Part 16
+        // 1st byte: reserved 0x00
+
+        // Test Part 1 (index 0) enabled -> 4th byte bit 0 = 1 -> 0x01
         val msgPart1 = YamahaSysExEncoder.createInsertionPartSwitchMessage(setOf(0))
         val expectedPart1 = byteArrayOf(
             0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
             0x36.toByte(), 0x00.toByte(), 0x4C.toByte(),
-            0x08.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(),
+            0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x01.toByte(),
             0xF7.toByte()
         )
         assertArrayEquals(expectedPart1, msgPart1)
 
-        // Test Part 1 + Part 2 enabled -> bits 15 and 14 set -> 0xC000 -> nibbles 0x0C, 0, 0, 0
+        // Test Part 1 + Part 2 (indices 0, 1) enabled -> 4th byte bits 0 and 1 = 0x03
         val msgPart1And2 = YamahaSysExEncoder.createInsertionPartSwitchMessage(setOf(0, 1))
         val expectedPart1And2 = byteArrayOf(
             0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
             0x36.toByte(), 0x00.toByte(), 0x4C.toByte(),
-            0x0C.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(),
+            0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0x03.toByte(),
             0xF7.toByte()
         )
         assertArrayEquals(expectedPart1And2, msgPart1And2)
+
+        // Test Parts 1, 2, 3 and Part 10 (indices 0, 1, 2, 9) -> 4th byte = 0x07, 3rd byte bit 2 = 0x04
+        val msgParts123And10 = YamahaSysExEncoder.createInsertionPartSwitchMessage(setOf(0, 1, 2, 9))
+        val expectedParts123And10 = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x36.toByte(), 0x00.toByte(), 0x4C.toByte(),
+            0x00.toByte(), 0x00.toByte(), 0x04.toByte(), 0x07.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedParts123And10, msgParts123And10)
+    }
+
+    @Test
+    fun testPartInsertionSwitchDirect() {
+        val msgs = YamahaSysExEncoder.setPartInsertionSwitch(0, true)
+        assertEquals(3, msgs.size)
+        // 1. Play Mode InsSw: 0x37 0x00 0x11 0x01
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x11.toByte(), 0x01.toByte(), 0xF7.toByte()),
+            msgs[0]
+        )
+        // 2. InsSw Alt: 0x37 0x00 0x42 0x01
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x42.toByte(), 0x01.toByte(), 0xF7.toByte()),
+            msgs[1]
+        )
+        // 3. Param with Voice: 0x37 0x00 0x18 0x01
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x18.toByte(), 0x01.toByte(), 0xF7.toByte()),
+            msgs[2]
+        )
+    }
+
+    @Test
+    fun testSetPartCompressorTypeMessages() {
+        val msgs = YamahaSysExEncoder.createSetPartCompressorTypeMessages(0, isVcm = true)
+        assertEquals(7, msgs.size)
+        // 1. Select Part 0 in Voice Edit Buffer (0D 00 00 00)
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x0D.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(), 0xF7.toByte()),
+            msgs[0]
+        )
+        // 2. Set Voice Insert Eff Type (40 03 00 08 00) - CMP: VCM COMPRESSOR 376
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x40.toByte(), 0x03.toByte(), 0x00.toByte(), 0x08.toByte(), 0x00.toByte(), 0xF7.toByte()),
+            msgs[1]
+        )
+        // 3. Set Voice Insert Eff Preset (40 03 02 00) - Basic
+        assertArrayEquals(
+            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x40.toByte(), 0x03.toByte(), 0x02.toByte(), 0x00.toByte(), 0xF7.toByte()),
+            msgs[2]
+        )
     }
 
     @Test

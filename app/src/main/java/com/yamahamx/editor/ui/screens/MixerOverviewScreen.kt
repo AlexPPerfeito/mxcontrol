@@ -70,11 +70,10 @@ fun MixerOverviewScreen(
     var selectedPartForVoiceDialog by remember { mutableStateOf<Int?>(null) }
 
     val focusedPart = parts.getOrNull(activeFocusedPartIndex) ?: parts.first()
-    val secondaryLayerParts = parts.filter { it.partIndex > 0 && it.isLayerSelected }
+    val secondaryLayerParts = parts.filter { it.isLayerSelected && it.partIndex != activeFocusedPartIndex }
     val isAnyLayerActive = secondaryLayerParts.isNotEmpty()
     val fullLayerParts = if (isAnyLayerActive) {
-        val basePart = parts.firstOrNull { it.partIndex == 0 } ?: parts.first()
-        (listOf(basePart) + secondaryLayerParts).distinctBy { it.partIndex }
+        listOf(focusedPart) + secondaryLayerParts
     } else {
         emptyList()
     }

@@ -63,8 +63,12 @@ object YamahaSysExEncoder {
     const val ADDR_LOW_PART_RCV_SUSTAIN_SWITCH: Byte = 0x3A.toByte() // 0x00 (Off), 0x01 (On)
     const val ADDR_LOW_PART_RCV_EXPRESSION_SWITCH: Byte = 0x3B.toByte() // 0x00 (Off), 0x01 (On)
 
-    // Multi Common Insertion Switch (AddrHigh = 0x36, AddrMid = 0x00, AddrLow = 0x4C)
+    // Multi Common Insertion Switch (AddrHigh = 0x36, AddrMid = 0x00, AddrLow = 0x4C, 4 bytes bitmask)
     const val ADDR_LOW_COMMON_INSERTION_PART_SWITCH: Byte = 0x4C.toByte()
+
+    // Multi Part Play Mode Insertion Switch (AddrHigh = 0x37, AddrMid = partIndex)
+    const val ADDR_LOW_PART_PLAY_MODE_INS_SW: Byte = 0x11.toByte() // 0x00 = off, 0x01 = on
+    const val ADDR_LOW_PART_INS_SW_ALT: Byte = 0x42.toByte()
 
     // Multi Part Insertion Effect / Compressor Parameters (AddrHigh = 0x37, AddrMid = partIndex)
     const val ADDR_LOW_PART_COMP_THRESHOLD: Byte = 0x30.toByte()
@@ -72,6 +76,11 @@ object YamahaSysExEncoder {
     const val ADDR_LOW_PART_COMP_RATIO: Byte = 0x32.toByte()
     const val ADDR_LOW_PART_COMP_ATTACK: Byte = 0x33.toByte()
     const val ADDR_LOW_PART_COMP_RELEASE: Byte = 0x34.toByte()
+
+    // Voice Insert Eff / Mixing Voice Edit Buffer Constants
+    const val ADDR_HIGH_PART_SET_CONTROL: Byte = 0x0D.toByte()
+    const val ADDR_HIGH_VOICE_COMMON: Byte = 0x40.toByte()
+    const val ADDR_MID_VOICE_INSERTION_A: Byte = 0x03.toByte()
 
     // Yamaha VCM / Classic Compressor Tables
     val COMPRESSOR_RATIO_LABELS = arrayOf("1.0:1", "1.5:1", "2.0:1", "3.0:1", "5.0:1", "7.0:1", "10:1", "20:1")
@@ -387,27 +396,42 @@ object YamahaSysExEncoder {
     }
 
     /**
-     * Builds SysEx for Common Insertion Part Switch (Address 36 00 4C, 4 bytes bitmask).
-     * Part 1 is bit 15, Part 2 is bit 14, ..., Part 16 is bit 0.
+     * Builds SysEx for Common Insertion Part Switch (Address 36 00 4C, 4 bytes).
+     * Official Yamaha MX Data List (Page 60):
+     * 1st byte (bit 6-0): reserved (0x00)
+     * 2nd byte: bit 1 = Part 16, bit 0 = Part 15
+     * 3rd byte: bit 6 = Part 14, bit 5 = Part 13, ..., bit 0 = Part 8
+     * 4th byte: bit 6 = Part 7,  bit 5 = Part 6,  ..., bit 0 = Part 1
      */
     fun createInsertionPartSwitchMessage(enabledPartIndices: Set<Int>): ByteArray {
-        var mask = 0
-        for (part in enabledPartIndices) {
-            if (part in 0..15) {
-                mask = mask or (1 shl (15 - part))
+        val byte1 = 0x00.toByte()
+
+        var b2 = 0
+        if (15 in enabledPartIndices) b2 = b2 or (1 shl 1) // Part 16
+        if (14 in enabledPartIndices) b2 = b2 or (1 shl 0) // Part 15
+        val byte2 = (b2 and 0x7F).toByte()
+
+        var b3 = 0
+        for (i in 7..13) { // Parts 8..14
+            if (i in enabledPartIndices) {
+                b3 = b3 or (1 shl (i - 7))
             }
         }
-        val data = byteArrayOf(
-            ((mask ushr 12) and 0x0F).toByte(),
-            ((mask ushr 8) and 0x0F).toByte(),
-            ((mask ushr 4) and 0x0F).toByte(),
-            (mask and 0x0F).toByte()
-        )
+        val byte3 = (b3 and 0x7F).toByte()
+
+        var b4 = 0
+        for (i in 0..6) { // Parts 1..7
+            if (i in enabledPartIndices) {
+                b4 = b4 or (1 shl i)
+            }
+        }
+        val byte4 = (b4 and 0x7F).toByte()
+
         return buildMultiByteParamChange(
             ADDR_HIGH_MULTI_COMMON,
             0x00.toByte(),
             ADDR_LOW_COMMON_INSERTION_PART_SWITCH,
-            data
+            byteArrayOf(byte1, byte2, byte3, byte4)
         )
     }
 
@@ -421,10 +445,62 @@ object YamahaSysExEncoder {
         return createInsertionPartSwitchMessage(indices)
     }
 
+    /**
+     * Directly switches InsSw inside the Part (02:Part -> 01:Play Mode -> InsSw):
+     * - Multi Part Insertion Switch (0x37 [partIndex] 0x11 [00|01])
+     * - Multi Part InsSw Alternative offset (0x37 [partIndex] 0x42 [00|01])
+     * - Multi Part Param with Voice (0x37 [partIndex] 0x18 [01])
+     */
+    fun setPartInsertionSwitch(partIndex: Int, enabled: Boolean): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val data = if (enabled) 0x01.toByte() else 0x00.toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_PLAY_MODE_INS_SW, data),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_INS_SW_ALT, data),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x18.toByte(), if (enabled) 0x01.toByte() else 0x00.toByte())
+        )
+    }
+
+    /**
+     * Configures Voice Insert Eff (02:Part -> 05:Voice Insert Eff) as CMP: VCM COMPRESSOR 376
+     * (Category CMP, Algorithm VCM COMPRESSOR 376, Type MSB = 0x08, Type LSB = 0x00, Preset = 0x00 Basic).
+     * Transmits to:
+     * 1. Mixing Part Voice Edit Buffer (0D 00 00 [partIndex])
+     * 2. Voice Insert Eff Type in Edit Buffer (40 03 00 [08] [00])
+     * 3. Voice Insert Eff Preset in Edit Buffer (40 03 02 [00])
+     * 4. Multi Part block (0x37 [partIndex] 0x40 [08] and 0x41 [00])
+     * 5. Multi Part block (0x37 [partIndex] 0x30 [08] and 0x31 [00])
+     */
+    fun createSetPartCompressorTypeMessages(partIndex: Int, isVcm: Boolean = true): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val typeMsb: Byte = 0x08.toByte() // CMP Category
+        val typeLsb: Byte = if (isVcm) 0x00.toByte() else 0x10.toByte() // 0x00 = VCM 376, 0x10 = Classic Comp
+
+        return listOf(
+            buildParamChange(ADDR_HIGH_PART_SET_CONTROL, 0x00.toByte(), 0x00.toByte(), clampedPart),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x00.toByte(), byteArrayOf(typeMsb, typeLsb)),
+            buildParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x02.toByte(), 0x00.toByte()),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x40.toByte(), typeMsb),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x41.toByte(), typeLsb),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x30.toByte(), typeMsb),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x31.toByte(), typeLsb)
+        )
+    }
+
     fun setPartCompressorThreshold(partIndex: Int, threshold: Int): ByteArray {
         val clampedPart = partIndex.coerceIn(0, 15).toByte()
         val clampedData = threshold.coerceIn(0, 127).toByte()
         return buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_THRESHOLD, clampedData)
+    }
+
+    fun setPartCompressorThresholdAll(partIndex: Int, threshold: Int): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val clampedData = threshold.coerceIn(0, 127).toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_THRESHOLD, clampedData),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x44.toByte(), clampedData),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x04.toByte(), byteArrayOf(0x00.toByte(), clampedData))
+        )
     }
 
     fun setPartCompressorOutputGain(partIndex: Int, outputGain: Int): ByteArray {
@@ -433,10 +509,30 @@ object YamahaSysExEncoder {
         return buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_OUTPUT_GAIN, clampedData)
     }
 
+    fun setPartCompressorOutputGainAll(partIndex: Int, outputGain: Int): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val clampedData = outputGain.coerceIn(0, 127).toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_OUTPUT_GAIN, clampedData),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x45.toByte(), clampedData),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x06.toByte(), byteArrayOf(0x00.toByte(), clampedData))
+        )
+    }
+
     fun setPartCompressorRatio(partIndex: Int, ratio: Int): ByteArray {
         val clampedPart = partIndex.coerceIn(0, 15).toByte()
         val clampedData = ratio.coerceIn(0, COMPRESSOR_RATIO_LABELS.size - 1).toByte()
         return buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_RATIO, clampedData)
+    }
+
+    fun setPartCompressorRatioAll(partIndex: Int, ratio: Int): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val clampedData = ratio.coerceIn(0, COMPRESSOR_RATIO_LABELS.size - 1).toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_RATIO, clampedData),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x46.toByte(), clampedData),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x08.toByte(), byteArrayOf(0x00.toByte(), clampedData))
+        )
     }
 
     fun setPartCompressorAttack(partIndex: Int, attack: Int): ByteArray {
@@ -445,10 +541,30 @@ object YamahaSysExEncoder {
         return buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_ATTACK, clampedData)
     }
 
+    fun setPartCompressorAttackAll(partIndex: Int, attack: Int): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val clampedData = attack.coerceIn(0, COMPRESSOR_ATTACK_VALUES.size - 1).toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_ATTACK, clampedData),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x47.toByte(), clampedData),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x0A.toByte(), byteArrayOf(0x00.toByte(), clampedData))
+        )
+    }
+
     fun setPartCompressorRelease(partIndex: Int, release: Int): ByteArray {
         val clampedPart = partIndex.coerceIn(0, 15).toByte()
         val clampedData = release.coerceIn(0, COMPRESSOR_RELEASE_VALUES.size - 1).toByte()
         return buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_RELEASE, clampedData)
+    }
+
+    fun setPartCompressorReleaseAll(partIndex: Int, release: Int): List<ByteArray> {
+        val clampedPart = partIndex.coerceIn(0, 15).toByte()
+        val clampedData = release.coerceIn(0, COMPRESSOR_RELEASE_VALUES.size - 1).toByte()
+        return listOf(
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_COMP_RELEASE, clampedData),
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x48.toByte(), clampedData),
+            buildMultiByteParamChange(ADDR_HIGH_VOICE_COMMON, ADDR_MID_VOICE_INSERTION_A, 0x0C.toByte(), byteArrayOf(0x00.toByte(), clampedData))
+        )
     }
 
     // --- Safety Flush & Anti-Stuck Notes Commands ---

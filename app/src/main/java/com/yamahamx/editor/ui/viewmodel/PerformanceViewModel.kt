@@ -2,6 +2,7 @@ package com.yamahamx.editor.ui.viewmodel
 
 import android.app.Activity
 import android.hardware.usb.UsbDevice
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yamahamx.editor.data.billing.BillingManager
@@ -1202,12 +1203,18 @@ class PerformanceViewModel(
             val rcvExpr = shouldPartReceiveExpression(part, currentState.common)
             batchMessages.add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, rcvExpr))
 
-            // 10. Insertion Effect / Compressor Parameters
-            batchMessages.add(YamahaSysExEncoder.setPartCompressorThreshold(part.partIndex, part.compressorThreshold))
-            batchMessages.add(YamahaSysExEncoder.setPartCompressorOutputGain(part.partIndex, part.compressorOutputGain))
-            batchMessages.add(YamahaSysExEncoder.setPartCompressorRatio(part.partIndex, part.compressorRatio))
-            batchMessages.add(YamahaSysExEncoder.setPartCompressorAttack(part.partIndex, part.compressorAttack))
-            batchMessages.add(YamahaSysExEncoder.setPartCompressorRelease(part.partIndex, part.compressorRelease))
+            // 10. Insertion Effect / Compressor Parameters & Type
+            if (part.isCompressorEnabled) {
+                batchMessages.addAll(YamahaSysExEncoder.createSetPartCompressorTypeMessages(part.partIndex, isVcm = true))
+                batchMessages.addAll(YamahaSysExEncoder.setPartInsertionSwitch(part.partIndex, true))
+                batchMessages.addAll(YamahaSysExEncoder.setPartCompressorThresholdAll(part.partIndex, part.compressorThreshold))
+                batchMessages.addAll(YamahaSysExEncoder.setPartCompressorOutputGainAll(part.partIndex, part.compressorOutputGain))
+                batchMessages.addAll(YamahaSysExEncoder.setPartCompressorRatioAll(part.partIndex, part.compressorRatio))
+                batchMessages.addAll(YamahaSysExEncoder.setPartCompressorAttackAll(part.partIndex, part.compressorAttack))
+                batchMessages.addAll(YamahaSysExEncoder.setPartCompressorReleaseAll(part.partIndex, part.compressorRelease))
+            } else {
+                batchMessages.addAll(YamahaSysExEncoder.setPartInsertionSwitch(part.partIndex, false))
+            }
         }
 
         // 11. Multi Common Insertion Part Switch (bitmask for Parts 1..16)
@@ -1297,11 +1304,8 @@ class PerformanceViewModel(
 
         // 2. Determine all parts that should now be coupled to the physical keyboard (Ch 1 = 0)
         val currentParts = _uiState.value.parts
-        val layerIndices = currentParts.filter { it.partIndex > 0 && it.isLayerSelected }.map { it.partIndex }.toSet()
-        // Part 1 (partIndex == 0) is the permanent keyboard base and remains on Ch 1 (0) unless explicitly changed in dropdown
-        val part0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
-        val baseP0Index = if (part0Ch in 0..15) setOf(0) else emptySet()
-        val activeCh0Indices = baseP0Index + layerIndices + targetIndex
+        val layerIndices = currentParts.filter { it.isLayerSelected && it.partIndex != targetIndex }.map { it.partIndex }.toSet()
+        val activeCh0Indices = setOf(targetIndex) + layerIndices
 
         // 3. Compute seamless Receive Channel transition without cutting sounding voices
         val transition = spilloverRouter.computeSeamlessPartSwitch(
@@ -1311,21 +1315,12 @@ class PerformanceViewModel(
 
         val updatedParts = currentParts.map { part ->
             val idx = part.partIndex
-            if (idx == 0) {
-                val currentP0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
-                val safeP0Ch = if (currentP0Ch in 0..15) currentP0Ch else 0
-                part.copy(receiveChannel = safeP0Ch)
-            } else {
-                part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
-            }
+            part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
         }
 
         val commonNow = _uiState.value.common
-        val safeTransitionMessages = transition.midiMessages.filterNot { msg ->
-            msg.contentEquals(YamahaSysExEncoder.setPartReceiveChannel(0, 127))
-        }
         val routingAndExprMessages = buildList {
-            addAll(safeTransitionMessages)
+            addAll(transition.midiMessages)
             updatedParts.forEach { part ->
                 add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, shouldPartReceiveExpression(part, commonNow)))
                 add(YamahaSysExEncoder.setPartSustainReceiveSwitch(part.partIndex, true))
@@ -1418,10 +1413,10 @@ class PerformanceViewModel(
         }
 
         // 3. Determine all parts coupled to physical keyboard keys (Ch 1 = 0x00):
-        // Part 1 (partIndex == 0) is the permanent base voice and ALWAYS remains on Channel 1 (rxChannel = 0).
-        // Secondary parts (1..15) with isLayerSelected == true couple to Channel 1 (0).
-        val layerIndices = updatedPartsState.filter { it.partIndex > 0 && it.isLayerSelected }.map { it.partIndex }.toSet()
-        val activeCh0Indices = setOf(0) + layerIndices
+        // Keyboard couples the currently focused part plus any parts marked with Layer.
+        val focusedPart = _uiState.value.activeFocusedPartIndex
+        val layerIndices = updatedPartsState.filter { it.isLayerSelected && it.partIndex != focusedPart }.map { it.partIndex }.toSet()
+        val activeCh0Indices = setOf(focusedPart) + layerIndices
 
         // 4. Compute seamless Receive Channel transition without cutting sounding voices
         val transition = spilloverRouter.computeSeamlessPartSwitch(
@@ -1429,26 +1424,15 @@ class PerformanceViewModel(
             activeCh0PartIndices = activeCh0Indices
         )
 
-        // Part 1 rxChannel is strictly protected: always 0 (Ch 1) unless explicitly set in dropdown
         val finalParts = updatedPartsState.map { part ->
             val idx = part.partIndex
-            if (idx == 0) {
-                val currentP0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
-                val safeP0Ch = if (currentP0Ch in 0..15) currentP0Ch else 0
-                part.copy(receiveChannel = safeP0Ch)
-            } else {
-                part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
-            }
+            part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
         }
 
-        // 5. Transmit MIDI/SysEx sequence - ensuring NO Off (127) SysEx is ever transmitted for Part 1
+        // 5. Transmit MIDI/SysEx sequence
         val commonNow = _uiState.value.common
-        val safeTransitionMessages = transition.midiMessages.filterNot { msg ->
-            msg.contentEquals(YamahaSysExEncoder.setPartReceiveChannel(0, 127))
-        }
-
         val routingAndExprMessages = buildList {
-            addAll(safeTransitionMessages)
+            addAll(transition.midiMessages)
             finalParts.forEach { part ->
                 add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, shouldPartReceiveExpression(part, commonNow)))
                 add(YamahaSysExEncoder.setPartSustainReceiveSwitch(part.partIndex, true))
@@ -1475,7 +1459,7 @@ class PerformanceViewModel(
 
     fun setPartLayer(partIndex: Int, isLayer: Boolean) {
         if (partIndex !in 0..15) return
-        if (partIndex == 0) return
+        if (partIndex == _uiState.value.activeFocusedPartIndex) return
         if (!isProUser.value && partIndex >= 2) {
             openUpgradeDialog()
             return
@@ -1487,18 +1471,18 @@ class PerformanceViewModel(
 
     fun syncRxChannels() {
         val currentParts = _uiState.value.parts
+        val focusedPart = _uiState.value.activeFocusedPartIndex
+        val activeKeyboardParts = (setOf(focusedPart) + currentParts.filter { it.isLayerSelected && it.partIndex != focusedPart }.map { it.partIndex }).toSet()
+
         val updatedParts = currentParts.map { part ->
             when {
-                part.partIndex == 0 -> {
-                    // Part 1 is permanent base on Ch 1 (0). Never Off unless explicitly set in dropdown.
-                    if (part.receiveChannel !in 0..15) part.copy(receiveChannel = 0) else part
-                }
-                part.isLayerSelected -> {
+                part.partIndex in activeKeyboardParts -> {
                     part.copy(receiveChannel = 0)
                 }
-                part.receiveChannel == 0 && !part.isLayerSelected -> {
-                    // Secondary part exiting layer returns to its natural channel (partIndex)
-                    part.copy(receiveChannel = part.partIndex)
+                part.receiveChannel == 0 -> {
+                    // Exiting keyboard focus / layer: restore to natural channel (or 127 for Part 1 when not active on keyboard)
+                    val naturalCh = if (part.partIndex == 0) 127 else part.partIndex
+                    part.copy(receiveChannel = naturalCh)
                 }
                 else -> part
             }
@@ -1506,8 +1490,7 @@ class PerformanceViewModel(
 
         val messages = mutableListOf<ByteArray>()
         updatedParts.forEach { part ->
-            val rxCh = if (part.partIndex == 0 && part.receiveChannel !in 0..15) 0 else part.receiveChannel
-            messages.add(YamahaSysExEncoder.setPartReceiveChannel(part.partIndex, rxCh))
+            messages.add(YamahaSysExEncoder.setPartReceiveChannel(part.partIndex, part.receiveChannel))
         }
 
         spilloverRouter.syncFromParts(updatedParts)
@@ -1988,48 +1971,107 @@ class PerformanceViewModel(
         if (partIndex !in 0..15) return
         updatePart(partIndex) { it.copy(isCompressorEnabled = enabled) }
         val updatedParts = _uiState.value.parts
-        val sysex = YamahaSysExEncoder.setPartInsertionEffectSwitch(partIndex, enabled, updatedParts)
-        midiManager.sendThrottled("PART_INSERT_SWITCH", sysex)
+        val currentPart = updatedParts[partIndex]
+
+        val messages = mutableListOf<ByteArray>()
+
+        if (enabled) {
+            // 1. Load Effect Type in Voice Insert Eff: CMP: VCM COMPRESSOR 376 (MSB 0x08, LSB 0x00, Preset 0x00)
+            messages.addAll(YamahaSysExEncoder.createSetPartCompressorTypeMessages(partIndex, isVcm = true))
+
+            // 2. Multi Common Insertion Part Switch (Address 36 00 4C 4-byte bitmask)
+            messages.add(YamahaSysExEncoder.setPartInsertionEffectSwitch(partIndex, true, updatedParts))
+
+            // 3. Multi Part Play Mode InsSw
+            messages.addAll(YamahaSysExEncoder.setPartInsertionSwitch(partIndex, true))
+
+            // 4. Send current compressor parameters (Threshold, Gain, Ratio, Attack, Release)
+            messages.addAll(YamahaSysExEncoder.setPartCompressorThresholdAll(partIndex, currentPart.compressorThreshold))
+            messages.addAll(YamahaSysExEncoder.setPartCompressorOutputGainAll(partIndex, currentPart.compressorOutputGain))
+            messages.addAll(YamahaSysExEncoder.setPartCompressorRatioAll(partIndex, currentPart.compressorRatio))
+            messages.addAll(YamahaSysExEncoder.setPartCompressorAttackAll(partIndex, currentPart.compressorAttack))
+            messages.addAll(YamahaSysExEncoder.setPartCompressorReleaseAll(partIndex, currentPart.compressorRelease))
+        } else {
+            // 1. Multi Common Insertion Part Switch (Address 36 00 4C)
+            messages.add(YamahaSysExEncoder.setPartInsertionEffectSwitch(partIndex, false, updatedParts))
+
+            // 2. Multi Part Play Mode InsSw OFF
+            messages.addAll(YamahaSysExEncoder.setPartInsertionSwitch(partIndex, false))
+        }
+
+        // Diagnostic Logging with Tag "MidiSysEx"
+        Log.d("MidiSysEx", "=== togglePartCompressor(part=$partIndex, enabled=$enabled) ===")
+        messages.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+        }
+
+        // Transmit sequence with 5ms pacing to protect Yamaha MX buffer
+        midiManager.sendKeyedSequence("PART_${partIndex}_COMP_TOGGLE", messages, delayMs = 5L)
     }
 
     fun setPartCompressorThreshold(partIndex: Int, threshold: Int) {
         if (partIndex !in 0..15) return
         val clamped = threshold.coerceIn(0, 127)
         updatePart(partIndex) { it.copy(compressorThreshold = clamped) }
-        val sysex = YamahaSysExEncoder.setPartCompressorThreshold(partIndex, clamped)
-        midiManager.sendThrottled("PART_${partIndex}_COMP_THRESH", sysex)
+
+        val msgs = YamahaSysExEncoder.setPartCompressorThresholdAll(partIndex, clamped)
+        Log.d("MidiSysEx", "=== setPartCompressorThreshold(part=$partIndex, threshold=$clamped) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Threshold[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+            midiManager.sendThrottled("PART_${partIndex}_COMP_THRESH_$i", msg)
+        }
     }
 
     fun setPartCompressorOutputGain(partIndex: Int, outputGain: Int) {
         if (partIndex !in 0..15) return
         val clamped = outputGain.coerceIn(0, 127)
         updatePart(partIndex) { it.copy(compressorOutputGain = clamped) }
-        val sysex = YamahaSysExEncoder.setPartCompressorOutputGain(partIndex, clamped)
-        midiManager.sendThrottled("PART_${partIndex}_COMP_GAIN", sysex)
+
+        val msgs = YamahaSysExEncoder.setPartCompressorOutputGainAll(partIndex, clamped)
+        Log.d("MidiSysEx", "=== setPartCompressorOutputGain(part=$partIndex, gain=$clamped) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX OutputGain[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+            midiManager.sendThrottled("PART_${partIndex}_COMP_GAIN_$i", msg)
+        }
     }
 
     fun setPartCompressorRatio(partIndex: Int, ratio: Int) {
         if (partIndex !in 0..15) return
         val clamped = ratio.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1)
         updatePart(partIndex) { it.copy(compressorRatio = clamped) }
-        val sysex = YamahaSysExEncoder.setPartCompressorRatio(partIndex, clamped)
-        midiManager.sendThrottled("PART_${partIndex}_COMP_RATIO", sysex)
+
+        val msgs = YamahaSysExEncoder.setPartCompressorRatioAll(partIndex, clamped)
+        Log.d("MidiSysEx", "=== setPartCompressorRatio(part=$partIndex, ratio=$clamped) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Ratio[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+            midiManager.sendThrottled("PART_${partIndex}_COMP_RATIO_$i", msg)
+        }
     }
 
     fun setPartCompressorAttack(partIndex: Int, attack: Int) {
         if (partIndex !in 0..15) return
         val clamped = attack.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1)
         updatePart(partIndex) { it.copy(compressorAttack = clamped) }
-        val sysex = YamahaSysExEncoder.setPartCompressorAttack(partIndex, clamped)
-        midiManager.sendThrottled("PART_${partIndex}_COMP_ATTACK", sysex)
+
+        val msgs = YamahaSysExEncoder.setPartCompressorAttackAll(partIndex, clamped)
+        Log.d("MidiSysEx", "=== setPartCompressorAttack(part=$partIndex, attack=$clamped) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Attack[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+            midiManager.sendThrottled("PART_${partIndex}_COMP_ATTACK_$i", msg)
+        }
     }
 
     fun setPartCompressorRelease(partIndex: Int, release: Int) {
         if (partIndex !in 0..15) return
         val clamped = release.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1)
         updatePart(partIndex) { it.copy(compressorRelease = clamped) }
-        val sysex = YamahaSysExEncoder.setPartCompressorRelease(partIndex, clamped)
-        midiManager.sendThrottled("PART_${partIndex}_COMP_RELEASE", sysex)
+
+        val msgs = YamahaSysExEncoder.setPartCompressorReleaseAll(partIndex, clamped)
+        Log.d("MidiSysEx", "=== setPartCompressorRelease(part=$partIndex, release=$clamped) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Release[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+            midiManager.sendThrottled("PART_${partIndex}_COMP_RELEASE_$i", msg)
+        }
     }
 
     fun resetPartCompressor(partIndex: Int) {
@@ -2048,13 +2090,19 @@ class PerformanceViewModel(
                 compressorRelease = defaultRelease
             )
         }
-        val msgs = listOf(
-            YamahaSysExEncoder.setPartCompressorThreshold(partIndex, defaultThreshold),
-            YamahaSysExEncoder.setPartCompressorOutputGain(partIndex, defaultGain),
-            YamahaSysExEncoder.setPartCompressorRatio(partIndex, defaultRatio),
-            YamahaSysExEncoder.setPartCompressorAttack(partIndex, defaultAttack),
-            YamahaSysExEncoder.setPartCompressorRelease(partIndex, defaultRelease)
-        )
+
+        val msgs = mutableListOf<ByteArray>()
+        msgs.addAll(YamahaSysExEncoder.setPartCompressorThresholdAll(partIndex, defaultThreshold))
+        msgs.addAll(YamahaSysExEncoder.setPartCompressorOutputGainAll(partIndex, defaultGain))
+        msgs.addAll(YamahaSysExEncoder.setPartCompressorRatioAll(partIndex, defaultRatio))
+        msgs.addAll(YamahaSysExEncoder.setPartCompressorAttackAll(partIndex, defaultAttack))
+        msgs.addAll(YamahaSysExEncoder.setPartCompressorReleaseAll(partIndex, defaultRelease))
+
+        Log.d("MidiSysEx", "=== resetPartCompressor(part=$partIndex) ===")
+        msgs.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Reset[$i]: ${YamahaSysExEncoder.toHexString(msg)}")
+        }
+
         midiManager.sendKeyedSequence("PART_${partIndex}_COMP_RESET", msgs, delayMs = 5L)
     }
 

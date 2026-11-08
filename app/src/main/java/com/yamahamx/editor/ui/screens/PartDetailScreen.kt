@@ -487,30 +487,32 @@ fun PartDetailScreen(
                         Spacer(modifier = Modifier.width(6.dp))
                     }
 
-                    // Quick Layer Toggle Button
-                    Button(
-                        onClick = onToggleLayer,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isLayerActive) YamahaGold else Color(0xFF1E2638)
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Layers,
-                            contentDescription = null,
-                            tint = if (isLayerActive) Color.Black else YamahaGold,
-                            modifier = Modifier.size(13.dp).padding(end = 2.dp)
-                        )
-                        Text(
-                            text = if (isLayerActive) stringResource(R.string.btn_layer_on) else stringResource(R.string.btn_layer_add),
-                            color = if (isLayerActive) Color.Black else Color.White,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    // Quick Layer Toggle Button (only on non-focused parts to layer with active voice)
+                    if (!isFocused) {
+                        Button(
+                            onClick = onToggleLayer,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (isLayerActive) YamahaGold else Color(0xFF1E2638)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Layers,
+                                contentDescription = null,
+                                tint = if (isLayerActive) Color.Black else YamahaGold,
+                                modifier = Modifier.size(13.dp).padding(end = 2.dp)
+                            )
+                            Text(
+                                text = if (isLayerActive) stringResource(R.string.btn_layer_on) else stringResource(R.string.btn_layer_add),
+                                color = if (isLayerActive) Color.Black else Color.White,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(6.dp))
                     }
-                    Spacer(modifier = Modifier.width(6.dp))
 
                     // Search / Change Voice Icon
                     IconButton(onClick = { showVoiceSelectorDialog = true }) {
