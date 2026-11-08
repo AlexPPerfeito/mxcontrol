@@ -25,7 +25,13 @@ data class MultiPartState(
     val isMuted: Boolean = false,
     val isSolo: Boolean = false,
     val receiveChannel: Int = partIndex, // 0..15 (Ch 1..16), 127 for Off (SysEx AddrLow: 0x04)
-    val isLayerSelected: Boolean = false // Multi-selection / active layer flag in UI
+    val isLayerSelected: Boolean = false, // Multi-selection / active layer flag in UI
+    val isCompressorEnabled: Boolean = false, // Insertion Effect Switch
+    val compressorThreshold: Int = 72, // 0..127 (-48 dB .. 0 dB)
+    val compressorOutputGain: Int = 64, // 0..127 (-12 dB .. +12 dB, Center 64 = 0 dB)
+    val compressorRatio: Int = 3, // Index in COMPRESSOR_RATIO_LABELS (0..7, default 3 = 3.0:1)
+    val compressorAttack: Int = 19, // Index in COMPRESSOR_ATTACK_VALUES (0..29, default 19 = 40 ms)
+    val compressorRelease: Int = 4 // Index in COMPRESSOR_RELEASE_VALUES (0..23, default 4 = 45 ms)
 ) {
     val partNumber: Int get() = partIndex + 1
     val isSplitActive: Boolean get() = noteLimitLow > 0 || noteLimitHigh < 127

@@ -357,4 +357,84 @@ class YamahaSysExEncoderTest {
         )
         assertArrayEquals(expectedOnPart2, YamahaSysExEncoder.setPartExpressionReceiveSwitch(1, true))
     }
+
+    @Test
+    fun testInsertionPartSwitchSysEx() {
+        // Test Part 1 enabled -> bit 15 set -> 0x8000 -> nibbles 8, 0, 0, 0
+        // Address 36 00 4C
+        val msgPart1 = YamahaSysExEncoder.createInsertionPartSwitchMessage(setOf(0))
+        val expectedPart1 = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x36.toByte(), 0x00.toByte(), 0x4C.toByte(),
+            0x08.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedPart1, msgPart1)
+
+        // Test Part 1 + Part 2 enabled -> bits 15 and 14 set -> 0xC000 -> nibbles 0x0C, 0, 0, 0
+        val msgPart1And2 = YamahaSysExEncoder.createInsertionPartSwitchMessage(setOf(0, 1))
+        val expectedPart1And2 = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x36.toByte(), 0x00.toByte(), 0x4C.toByte(),
+            0x0C.toByte(), 0x00.toByte(), 0x00.toByte(), 0x00.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedPart1And2, msgPart1And2)
+    }
+
+    @Test
+    fun testCompressorParametersSysEx() {
+        // Part 1 (index 0) Threshold = 72 (0x48)
+        val msgThresh = YamahaSysExEncoder.setPartCompressorThreshold(0, 72)
+        val expectedThresh = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x37.toByte(), 0x00.toByte(), 0x30.toByte(), 0x48.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedThresh, msgThresh)
+
+        // Part 2 (index 1) Output Gain = 64 (0x40)
+        val msgGain = YamahaSysExEncoder.setPartCompressorOutputGain(1, 64)
+        val expectedGain = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x37.toByte(), 0x01.toByte(), 0x31.toByte(), 0x40.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedGain, msgGain)
+
+        // Part 1 (index 0) Ratio = 3 (0x03)
+        val msgRatio = YamahaSysExEncoder.setPartCompressorRatio(0, 3)
+        val expectedRatio = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x37.toByte(), 0x00.toByte(), 0x32.toByte(), 0x03.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedRatio, msgRatio)
+
+        // Part 1 (index 0) Attack = 19 (0x13)
+        val msgAttack = YamahaSysExEncoder.setPartCompressorAttack(0, 19)
+        val expectedAttack = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x37.toByte(), 0x00.toByte(), 0x33.toByte(), 0x13.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedAttack, msgAttack)
+
+        // Part 1 (index 0) Release = 4 (0x04)
+        val msgRelease = YamahaSysExEncoder.setPartCompressorRelease(0, 4)
+        val expectedRelease = byteArrayOf(
+            0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(),
+            0x37.toByte(), 0x00.toByte(), 0x34.toByte(), 0x04.toByte(),
+            0xF7.toByte()
+        )
+        assertArrayEquals(expectedRelease, msgRelease)
+    }
+
+    @Test
+    fun testCompressorFormatting() {
+        assertEquals("3.0:1", YamahaSysExEncoder.formatCompressorRatio(3))
+        assertEquals("40 ms", YamahaSysExEncoder.formatCompressorAttackMs(19))
+        assertEquals("45 ms", YamahaSysExEncoder.formatCompressorReleaseMs(4))
+        assertEquals("+0.0 dB", YamahaSysExEncoder.formatCompressorOutputGainDb(64))
+    }
 }

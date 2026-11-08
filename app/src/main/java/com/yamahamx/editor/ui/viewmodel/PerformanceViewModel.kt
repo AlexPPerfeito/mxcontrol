@@ -1201,7 +1201,18 @@ class PerformanceViewModel(
             //    OFF for Part 1 (Piano), fixed Organs, and external controller parts (e.g. SMK25).
             val rcvExpr = shouldPartReceiveExpression(part, currentState.common)
             batchMessages.add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, rcvExpr))
+
+            // 10. Insertion Effect / Compressor Parameters
+            batchMessages.add(YamahaSysExEncoder.setPartCompressorThreshold(part.partIndex, part.compressorThreshold))
+            batchMessages.add(YamahaSysExEncoder.setPartCompressorOutputGain(part.partIndex, part.compressorOutputGain))
+            batchMessages.add(YamahaSysExEncoder.setPartCompressorRatio(part.partIndex, part.compressorRatio))
+            batchMessages.add(YamahaSysExEncoder.setPartCompressorAttack(part.partIndex, part.compressorAttack))
+            batchMessages.add(YamahaSysExEncoder.setPartCompressorRelease(part.partIndex, part.compressorRelease))
         }
+
+        // 11. Multi Common Insertion Part Switch (bitmask for Parts 1..16)
+        val enabledInsertParts = currentState.parts.filter { it.isCompressorEnabled }.map { it.partIndex }.toSet()
+        batchMessages.add(YamahaSysExEncoder.createInsertionPartSwitchMessage(enabledInsertParts))
 
         // Send all messages in sequence with 15ms safe spacing
         midiManager.sendSequence(batchMessages, delayMs = 15L)
@@ -1969,6 +1980,82 @@ class PerformanceViewModel(
             YamahaSysExEncoder.setMasterEqBandGain(bandIdx, 64)
         }
         midiManager.sendKeyedSequence("MASTER_EQ_RESET", messages, delayMs = 5L)
+    }
+
+    // --- Part Compressor / Insert FX ---
+
+    fun togglePartCompressor(partIndex: Int, enabled: Boolean) {
+        if (partIndex !in 0..15) return
+        updatePart(partIndex) { it.copy(isCompressorEnabled = enabled) }
+        val updatedParts = _uiState.value.parts
+        val sysex = YamahaSysExEncoder.setPartInsertionEffectSwitch(partIndex, enabled, updatedParts)
+        midiManager.sendThrottled("PART_INSERT_SWITCH", sysex)
+    }
+
+    fun setPartCompressorThreshold(partIndex: Int, threshold: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = threshold.coerceIn(0, 127)
+        updatePart(partIndex) { it.copy(compressorThreshold = clamped) }
+        val sysex = YamahaSysExEncoder.setPartCompressorThreshold(partIndex, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_COMP_THRESH", sysex)
+    }
+
+    fun setPartCompressorOutputGain(partIndex: Int, outputGain: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = outputGain.coerceIn(0, 127)
+        updatePart(partIndex) { it.copy(compressorOutputGain = clamped) }
+        val sysex = YamahaSysExEncoder.setPartCompressorOutputGain(partIndex, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_COMP_GAIN", sysex)
+    }
+
+    fun setPartCompressorRatio(partIndex: Int, ratio: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = ratio.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1)
+        updatePart(partIndex) { it.copy(compressorRatio = clamped) }
+        val sysex = YamahaSysExEncoder.setPartCompressorRatio(partIndex, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_COMP_RATIO", sysex)
+    }
+
+    fun setPartCompressorAttack(partIndex: Int, attack: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = attack.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1)
+        updatePart(partIndex) { it.copy(compressorAttack = clamped) }
+        val sysex = YamahaSysExEncoder.setPartCompressorAttack(partIndex, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_COMP_ATTACK", sysex)
+    }
+
+    fun setPartCompressorRelease(partIndex: Int, release: Int) {
+        if (partIndex !in 0..15) return
+        val clamped = release.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1)
+        updatePart(partIndex) { it.copy(compressorRelease = clamped) }
+        val sysex = YamahaSysExEncoder.setPartCompressorRelease(partIndex, clamped)
+        midiManager.sendThrottled("PART_${partIndex}_COMP_RELEASE", sysex)
+    }
+
+    fun resetPartCompressor(partIndex: Int) {
+        if (partIndex !in 0..15) return
+        val defaultThreshold = 72
+        val defaultGain = 64
+        val defaultRatio = 3
+        val defaultAttack = 19
+        val defaultRelease = 4
+        updatePart(partIndex) {
+            it.copy(
+                compressorThreshold = defaultThreshold,
+                compressorOutputGain = defaultGain,
+                compressorRatio = defaultRatio,
+                compressorAttack = defaultAttack,
+                compressorRelease = defaultRelease
+            )
+        }
+        val msgs = listOf(
+            YamahaSysExEncoder.setPartCompressorThreshold(partIndex, defaultThreshold),
+            YamahaSysExEncoder.setPartCompressorOutputGain(partIndex, defaultGain),
+            YamahaSysExEncoder.setPartCompressorRatio(partIndex, defaultRatio),
+            YamahaSysExEncoder.setPartCompressorAttack(partIndex, defaultAttack),
+            YamahaSysExEncoder.setPartCompressorRelease(partIndex, defaultRelease)
+        )
+        midiManager.sendKeyedSequence("PART_${partIndex}_COMP_RESET", msgs, delayMs = 5L)
     }
 
     fun setPart12Link(enabled: Boolean) {

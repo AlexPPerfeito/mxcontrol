@@ -453,4 +453,20 @@
     <!-- Banner Promocional de Noviembre / Black Friday -->
     <string name="promo_black_friday_title">Semana Especial Pro</string>
     <string name="promo_black_friday_desc">¡Del 01 al 07 de Noviembre: Multi-Layer (3+ partes), Bluetooth MIDI y todas las funciones Pro gratis para probar!</string>
+
+    <!-- Compressor / Insert FX -->
+    <string name="section_compressor_insert_fx">COMPRESSOR / INSERT FX</string>
+    <string name="btn_comp_graph">GRÁFICO</string>
+    <string name="compressor_graph_title">CURVA DINÁMICA DE COMPRESIÓN</string>
+    <string name="comp_param_thresh_short">THRESH</string>
+    <string name="comp_param_threshold">Umbral (Threshold)</string>
+    <string name="comp_param_ratio">RATIO</string>
+    <string name="comp_ratio_title">Razón (Ratio)</string>
+    <string name="comp_param_output_short">OUTPUT</string>
+    <string name="comp_param_output">Ganancia de Salida (Output)</string>
+    <string name="comp_param_attack_short">ATTACK</string>
+    <string name="comp_attack_title">Tiempo de Ataque (Attack)</string>
+    <string name="comp_param_release_short">RELEASE</string>
+    <string name="comp_release_title">Tiempo de Liberación (Release)</string>
+    <string name="btn_reset_comp">Reset Comp</string>
 </resources>

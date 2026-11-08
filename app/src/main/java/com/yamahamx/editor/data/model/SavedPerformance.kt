@@ -89,7 +89,13 @@ data class SavedPart(
     val isSolo: Boolean = false,
     val receiveChannel: Int = partIndex,
     val isModulationEnabled: Boolean = true,
-    val isLayerSelected: Boolean = false
+    val isLayerSelected: Boolean = false,
+    val isCompressorEnabled: Boolean = false,
+    val compressorThreshold: Int = 72,
+    val compressorOutputGain: Int = 64,
+    val compressorRatio: Int = 3,
+    val compressorAttack: Int = 19,
+    val compressorRelease: Int = 4
 ) {
     fun toMultiPartState(): MultiPartState {
         val safeVolume = volume.coerceIn(0, 127)
@@ -113,7 +119,13 @@ data class SavedPart(
             isMuted = isMuted,
             isSolo = isSolo,
             receiveChannel = if (partIndex == 0 && (receiveChannel == 127 || receiveChannel !in 0..15)) 0 else receiveChannel,
-            isLayerSelected = isLayerSelected
+            isLayerSelected = isLayerSelected,
+            isCompressorEnabled = isCompressorEnabled,
+            compressorThreshold = compressorThreshold,
+            compressorOutputGain = compressorOutputGain,
+            compressorRatio = compressorRatio,
+            compressorAttack = compressorAttack,
+            compressorRelease = compressorRelease
         )
     }
 
@@ -139,6 +151,12 @@ data class SavedPart(
             put("isSolo", isSolo)
             put("receiveChannel", receiveChannel)
             put("isLayerSelected", isLayerSelected)
+            put("isCompressorEnabled", isCompressorEnabled)
+            put("compressorThreshold", compressorThreshold)
+            put("compressorOutputGain", compressorOutputGain)
+            put("compressorRatio", compressorRatio)
+            put("compressorAttack", compressorAttack)
+            put("compressorRelease", compressorRelease)
         }
     }
 
@@ -165,7 +183,13 @@ data class SavedPart(
                 isMuted = state.isMuted,
                 isSolo = state.isSolo,
                 receiveChannel = state.receiveChannel,
-                isLayerSelected = state.isLayerSelected
+                isLayerSelected = state.isLayerSelected,
+                isCompressorEnabled = state.isCompressorEnabled,
+                compressorThreshold = state.compressorThreshold,
+                compressorOutputGain = state.compressorOutputGain,
+                compressorRatio = state.compressorRatio,
+                compressorAttack = state.compressorAttack,
+                compressorRelease = state.compressorRelease
             )
         }
 
@@ -197,7 +221,13 @@ data class SavedPart(
                 isMuted = isMuted,
                 isSolo = json.optBoolean("isSolo", false),
                 receiveChannel = safeRxCh,
-                isLayerSelected = json.optBoolean("isLayerSelected", false)
+                isLayerSelected = json.optBoolean("isLayerSelected", false),
+                isCompressorEnabled = json.optBoolean("isCompressorEnabled", false),
+                compressorThreshold = json.optInt("compressorThreshold", 72),
+                compressorOutputGain = json.optInt("compressorOutputGain", 64),
+                compressorRatio = json.optInt("compressorRatio", 3),
+                compressorAttack = json.optInt("compressorAttack", 19),
+                compressorRelease = json.optInt("compressorRelease", 4)
             )
         }
     }

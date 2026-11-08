@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -47,6 +48,7 @@ import com.yamahamx.editor.data.model.MultiPartState
 import com.yamahamx.editor.data.model.NoteHelper
 import com.yamahamx.editor.data.model.YamahaVoice
 import com.yamahamx.editor.data.repository.MidiLearnableParameter
+import com.yamahamx.editor.ui.components.CompressorGraphDialog
 import com.yamahamx.editor.ui.components.FaderControl
 import com.yamahamx.editor.data.midi.YamahaSysExEncoder
 import com.yamahamx.editor.ui.components.FilterXyPadDialog
@@ -83,6 +85,13 @@ fun PartDetailScreen(
     masterEqGains: List<Int> = List(5) { 64 },
     onMasterEqBandGainChange: (Int, Int) -> Unit = { _, _ -> },
     onResetMasterEq: () -> Unit = {},
+    onToggleCompressorEnabled: (Boolean) -> Unit = {},
+    onCompressorThresholdChange: (Int) -> Unit = {},
+    onCompressorOutputGainChange: (Int) -> Unit = {},
+    onCompressorRatioChange: (Int) -> Unit = {},
+    onCompressorAttackChange: (Int) -> Unit = {},
+    onCompressorReleaseChange: (Int) -> Unit = {},
+    onResetCompressor: () -> Unit = {},
     onModulationChange: (Int) -> Unit = {},
     onToggleModulationEnabled: (Boolean) -> Unit = {},
     onToggleMute: () -> Unit,
@@ -103,11 +112,13 @@ fun PartDetailScreen(
     var showVoiceSelectorDialog by remember { mutableStateOf(false) }
     var showFilterXyPadDialog by remember { mutableStateOf(false) }
     var showMasterEqGraphDialog by remember { mutableStateOf(false) }
+    var showCompressorGraphDialog by remember { mutableStateOf(false) }
     var showChannelMenu by remember { mutableStateOf(false) }
 
     // Independent Collapsible Card states remembered across navigation/recompositions
     var isMixExpanded by rememberSaveable { mutableStateOf(true) }
     var isEqExpanded by rememberSaveable { mutableStateOf(true) }
+    var isCompressorExpanded by rememberSaveable { mutableStateOf(true) }
     var isFilterExpanded by rememberSaveable { mutableStateOf(true) }
     var isModulationExpanded by rememberSaveable { mutableStateOf(true) }
     var isNoteLimitExpanded by rememberSaveable { mutableStateOf(true) }
@@ -885,6 +896,256 @@ fun PartDetailScreen(
         }
 
         // ===================================================================
+        // 1C. COLLAPSIBLE CARD: COMPRESSOR / INSERT FX (VCM / CLASSIC COMP + GRÁFICO)
+        // ===================================================================
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
+            border = androidx.compose.foundation.BorderStroke(1.dp, SynthCardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(if (isLandscape) 8.dp else 12.dp)
+            ) {
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.section_compressor_insert_fx),
+                    expanded = isCompressorExpanded,
+                    onToggleExpand = { isCompressorExpanded = !isCompressorExpanded },
+                    trailingContent = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Switch(
+                                checked = part.isCompressorEnabled,
+                                onCheckedChange = { onToggleCompressorEnabled(it) },
+                                modifier = Modifier.scale(0.8f),
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = Color.Black,
+                                    checkedTrackColor = YamahaCyan,
+                                    uncheckedThumbColor = SynthMutedGray,
+                                    uncheckedTrackColor = SynthDarkBackground
+                                )
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = YamahaCyan.copy(alpha = 0.15f),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, YamahaCyan.copy(alpha = 0.7f)),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .clickable { showCompressorGraphDialog = true }
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_comp_graph),
+                                    color = YamahaCyan,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.6.sp,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                    }
+                )
+
+                AnimatedVisibility(
+                    visible = isCompressorExpanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    val isCompModified = part.compressorThreshold != 72 ||
+                            part.compressorOutputGain != 64 ||
+                            part.compressorRatio != 3 ||
+                            part.compressorAttack != 19 ||
+                            part.compressorRelease != 4
+                    val isCompactPortraitComp = !isLandscape || configuration.screenWidthDp < 600
+
+                    if (isCompactPortraitComp) {
+                        // Portrait / Narrow Screens (< 600dp): 100% Full-Width Single-Line Horizontal Rows per Control
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 10.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            CompactFaderRow(
+                                title = stringResource(R.string.comp_param_threshold),
+                                value = part.compressorThreshold,
+                                valueRange = 0f..127f,
+                                valueFormatter = { YamahaSysExEncoder.formatCompressorThresholdDb(it) },
+                                onValueChange = onCompressorThresholdChange
+                            )
+
+                            CompactFaderRow(
+                                title = stringResource(R.string.comp_param_output),
+                                value = part.compressorOutputGain,
+                                valueRange = 0f..127f,
+                                valueFormatter = { YamahaSysExEncoder.formatCompressorOutputGainDb(it) },
+                                onValueChange = onCompressorOutputGainChange
+                            )
+
+                            CompactFaderRow(
+                                title = stringResource(R.string.comp_ratio_title),
+                                value = part.compressorRatio,
+                                valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1).toFloat(),
+                                valueFormatter = { YamahaSysExEncoder.formatCompressorRatio(it) },
+                                onValueChange = onCompressorRatioChange
+                            )
+
+                            CompactFaderRow(
+                                title = stringResource(R.string.comp_attack_title),
+                                value = part.compressorAttack,
+                                valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1).toFloat(),
+                                valueFormatter = { YamahaSysExEncoder.formatCompressorAttackMs(it) },
+                                onValueChange = onCompressorAttackChange
+                            )
+
+                            CompactFaderRow(
+                                title = stringResource(R.string.comp_release_title),
+                                value = part.compressorRelease,
+                                valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1).toFloat(),
+                                valueFormatter = { YamahaSysExEncoder.formatCompressorReleaseMs(it) },
+                                onValueChange = onCompressorReleaseChange
+                            )
+
+                            OutlinedButton(
+                                onClick = onResetCompressor,
+                                enabled = isCompModified,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = YamahaCyan,
+                                    disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isCompModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                                ),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(34.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_reset_comp),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
+                        }
+                    } else {
+                        // Landscape (>= 600dp): 2-Column Grid Layout
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Row 1: Input / Threshold & Output Gain
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.comp_param_threshold),
+                                    value = part.compressorThreshold,
+                                    range = 0f..127f,
+                                    onValueChange = onCompressorThresholdChange,
+                                    valueFormatter = { YamahaSysExEncoder.formatCompressorThresholdDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                FaderControl(
+                                    title = stringResource(R.string.comp_param_output),
+                                    value = part.compressorOutputGain,
+                                    range = 0f..127f,
+                                    onValueChange = onCompressorOutputGainChange,
+                                    valueFormatter = { YamahaSysExEncoder.formatCompressorOutputGainDb(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // Row 2: Ratio & Attack Time
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.comp_ratio_title),
+                                    value = part.compressorRatio,
+                                    range = 0f..(YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1).toFloat(),
+                                    onValueChange = onCompressorRatioChange,
+                                    valueFormatter = { YamahaSysExEncoder.formatCompressorRatio(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                FaderControl(
+                                    title = stringResource(R.string.comp_attack_title),
+                                    value = part.compressorAttack,
+                                    range = 0f..(YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1).toFloat(),
+                                    onValueChange = onCompressorAttackChange,
+                                    valueFormatter = { YamahaSysExEncoder.formatCompressorAttackMs(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            // Row 3: Release Time & Reset Comp Button
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.Bottom
+                            ) {
+                                FaderControl(
+                                    title = stringResource(R.string.comp_release_title),
+                                    value = part.compressorRelease,
+                                    range = 0f..(YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1).toFloat(),
+                                    onValueChange = onCompressorReleaseChange,
+                                    valueFormatter = { YamahaSysExEncoder.formatCompressorReleaseMs(it) },
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                OutlinedButton(
+                                    onClick = onResetCompressor,
+                                    enabled = isCompModified,
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = YamahaCyan,
+                                        disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        if (isCompModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                                    ),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(34.dp)
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.btn_reset_comp),
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ===================================================================
         // 2. COLLAPSIBLE CARD: FILTRO (TONE GENERATOR) + PAD X/Y + ENVOLTÓRIA (AEG)
         // ===================================================================
         Card(
@@ -1346,6 +1607,25 @@ fun PartDetailScreen(
         )
     }
 
+    // Compressor Dynamic Curve Modal Dialog
+    if (showCompressorGraphDialog) {
+        CompressorGraphDialog(
+            partNumber = part.partNumber,
+            threshold = part.compressorThreshold,
+            outputGain = part.compressorOutputGain,
+            ratio = part.compressorRatio,
+            attack = part.compressorAttack,
+            release = part.compressorRelease,
+            onThresholdChange = onCompressorThresholdChange,
+            onOutputGainChange = onCompressorOutputGainChange,
+            onRatioChange = onCompressorRatioChange,
+            onAttackChange = onCompressorAttackChange,
+            onReleaseChange = onCompressorReleaseChange,
+            onResetComp = onResetCompressor,
+            onDismiss = { showCompressorGraphDialog = false }
+        )
+    }
+
     // Voice Selector Modal Dialog
     if (showVoiceSelectorDialog) {
         VoiceSelectorDialog(
@@ -1487,6 +1767,83 @@ private fun CompactEqBandHorizontalRow(
             Text(
                 text = YamahaSysExEncoder.formatEqGainDb(value),
                 color = if (value != 64) YamahaCyan else SynthLightText,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                softWrap = false
+            )
+        }
+    }
+}
+
+/**
+ * Full-width (100%) compact horizontal fader row for Compressor and Part controls:
+ * Label on the left, Slider in the middle, and formatted readout box on the right.
+ */
+@Composable
+private fun CompactFaderRow(
+    title: String,
+    value: Int,
+    valueRange: ClosedFloatingPointRange<Float>,
+    valueFormatter: (Int) -> String,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(SynthDarkBackground.copy(alpha = 0.65f))
+            .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Left: Label
+        Text(
+            text = title.uppercase(),
+            color = SynthMutedGray,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.width(114.dp)
+        )
+
+        // Middle: Slider
+        Slider(
+            value = value.toFloat(),
+            onValueChange = { onValueChange(it.toInt()) },
+            valueRange = valueRange,
+            colors = SliderDefaults.colors(
+                thumbColor = SynthLightText,
+                activeTrackColor = YamahaCyan,
+                inactiveTrackColor = SynthFaderTrack
+            ),
+            modifier = Modifier
+                .weight(1f)
+                .height(24.dp)
+        )
+
+        // Right: Formatted Value Readout Box
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .defaultMinSize(minWidth = 68.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(SynthDarkBackground)
+                .border(
+                    width = 1.dp,
+                    color = YamahaCyan.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        ) {
+            Text(
+                text = valueFormatter(value),
+                color = YamahaCyan,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
