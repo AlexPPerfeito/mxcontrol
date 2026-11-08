@@ -112,7 +112,7 @@ data class SavedPart(
             isModulationEnabled = isModulationEnabled,
             isMuted = isMuted,
             isSolo = isSolo,
-            receiveChannel = receiveChannel,
+            receiveChannel = if (partIndex == 0 && (receiveChannel == 127 || receiveChannel !in 0..15)) 0 else receiveChannel,
             isLayerSelected = isLayerSelected
         )
     }
@@ -173,9 +173,12 @@ data class SavedPart(
             val rawVol = json.optInt("volume", 100)
             val isMuted = json.optBoolean("isMuted", false)
             val safeVol = rawVol.coerceIn(0, 127)
+            val partIdx = json.optInt("partIndex", 0)
+            val rawRxCh = json.optInt("receiveChannel", partIdx)
+            val safeRxCh = if (partIdx == 0 && (rawRxCh == 127 || rawRxCh !in 0..15)) 0 else rawRxCh
 
             return SavedPart(
-                partIndex = json.optInt("partIndex", 0),
+                partIndex = partIdx,
                 voice = SavedVoice.fromJson(json.getJSONObject("voice")),
                 volume = safeVol,
                 pan = json.optInt("pan", 64),
@@ -193,7 +196,7 @@ data class SavedPart(
                 isModulationEnabled = json.optBoolean("isModulationEnabled", true),
                 isMuted = isMuted,
                 isSolo = json.optBoolean("isSolo", false),
-                receiveChannel = json.optInt("receiveChannel", 0),
+                receiveChannel = safeRxCh,
                 isLayerSelected = json.optBoolean("isLayerSelected", false)
             )
         }

@@ -70,7 +70,14 @@ fun MixerOverviewScreen(
     var selectedPartForVoiceDialog by remember { mutableStateOf<Int?>(null) }
 
     val focusedPart = parts.getOrNull(activeFocusedPartIndex) ?: parts.first()
-    val layerParts = parts.filter { it.isLayerSelected }
+    val secondaryLayerParts = parts.filter { it.partIndex > 0 && it.isLayerSelected }
+    val isAnyLayerActive = secondaryLayerParts.isNotEmpty()
+    val fullLayerParts = if (isAnyLayerActive) {
+        val basePart = parts.firstOrNull { it.partIndex == 0 } ?: parts.first()
+        (listOf(basePart) + secondaryLayerParts).distinctBy { it.partIndex }
+    } else {
+        emptyList()
+    }
 
     // Auto-scroll Mixer horizontal strip strictly when the active focused part changes
     LaunchedEffect(activeFocusedPartIndex) {
@@ -90,11 +97,11 @@ fun MixerOverviewScreen(
         ) {
             // Live Focus & Multi-Layer status banner (Compact for Landscape)
             Surface(
-                color = if (layerParts.isNotEmpty()) YamahaGold.copy(alpha = 0.15f) else YamahaCyan.copy(alpha = 0.15f),
+                color = if (isAnyLayerActive) YamahaGold.copy(alpha = 0.15f) else YamahaCyan.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(6.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     0.5.dp,
-                    if (layerParts.isNotEmpty()) YamahaGold.copy(alpha = 0.5f) else YamahaCyan.copy(alpha = 0.4f)
+                    if (isAnyLayerActive) YamahaGold.copy(alpha = 0.5f) else YamahaCyan.copy(alpha = 0.4f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -105,14 +112,14 @@ fun MixerOverviewScreen(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
                     Icon(
-                        imageVector = if (layerParts.isNotEmpty()) Icons.Default.Layers else Icons.Default.FlashOn,
+                        imageVector = if (isAnyLayerActive) Icons.Default.Layers else Icons.Default.FlashOn,
                         contentDescription = null,
-                        tint = if (layerParts.isNotEmpty()) YamahaGold else YamahaCyan,
+                        tint = if (isAnyLayerActive) YamahaGold else YamahaCyan,
                         modifier = Modifier.size(13.dp).padding(end = 4.dp)
                     )
                     Text(
-                        text = if (layerParts.isNotEmpty())
-                            stringResource(R.string.mixer_banner_layer_active, layerParts.joinToString(" + ") { "P${it.partNumber} [${it.voice.name}]" })
+                        text = if (isAnyLayerActive)
+                            stringResource(R.string.mixer_banner_layer_active, fullLayerParts.joinToString(" + ") { "P${it.partNumber} [${it.voice.name}]" })
                         else
                             stringResource(R.string.mixer_banner_live_focus, focusedPart.partNumber, focusedPart.voice.name),
                         color = Color.White,
@@ -168,11 +175,11 @@ fun MixerOverviewScreen(
         ) {
             // Live Focus & Multi-Layer status banner
             Surface(
-                color = if (layerParts.isNotEmpty()) YamahaGold.copy(alpha = 0.15f) else YamahaCyan.copy(alpha = 0.15f),
+                color = if (isAnyLayerActive) YamahaGold.copy(alpha = 0.15f) else YamahaCyan.copy(alpha = 0.15f),
                 shape = RoundedCornerShape(8.dp),
                 border = androidx.compose.foundation.BorderStroke(
                     1.dp,
-                    if (layerParts.isNotEmpty()) YamahaGold.copy(alpha = 0.5f) else YamahaCyan.copy(alpha = 0.4f)
+                    if (isAnyLayerActive) YamahaGold.copy(alpha = 0.5f) else YamahaCyan.copy(alpha = 0.4f)
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -183,14 +190,14 @@ fun MixerOverviewScreen(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                 ) {
                     Icon(
-                        imageVector = if (layerParts.isNotEmpty()) Icons.Default.Layers else Icons.Default.FlashOn,
+                        imageVector = if (isAnyLayerActive) Icons.Default.Layers else Icons.Default.FlashOn,
                         contentDescription = null,
-                        tint = if (layerParts.isNotEmpty()) YamahaGold else YamahaCyan,
+                        tint = if (isAnyLayerActive) YamahaGold else YamahaCyan,
                         modifier = Modifier.size(16.dp).padding(end = 6.dp)
                     )
                     Text(
-                        text = if (layerParts.isNotEmpty())
-                            stringResource(R.string.mixer_banner_layer_active, layerParts.joinToString(" + ") { "P${it.partNumber} [${it.voice.name}]" })
+                        text = if (isAnyLayerActive)
+                            stringResource(R.string.mixer_banner_layer_active, fullLayerParts.joinToString(" + ") { "P${it.partNumber} [${it.voice.name}]" })
                         else
                             stringResource(R.string.mixer_banner_live_focus, focusedPart.partNumber, focusedPart.voice.name),
                         color = Color.White,

@@ -171,4 +171,17 @@ class SavedPerformanceTest {
         assertEquals(62, restoredP2.noteShift)
         assertEquals(1, restoredP2.receiveChannel)
     }
+
+    @Test
+    fun testPart1ReceiveChannelNeverOffWhenDeserializedOrRestored() {
+        val voice = SavedVoice(name = "CncrtGrand", category = "AP", subCategory = "APno", msb = 63, lsb = 0, programChange = 0)
+        // Simulate legacy or buggy saved part with Part 1 set to Off (127)
+        val corruptedP1 = SavedPart(partIndex = 0, voice = voice, receiveChannel = 127)
+        val restoredMultiPart = corruptedP1.toMultiPartState()
+        assertEquals(0, restoredMultiPart.receiveChannel)
+
+        val json = corruptedP1.toJson()
+        val deserialized = SavedPart.fromJson(json)
+        assertEquals(0, deserialized.receiveChannel)
+    }
 }

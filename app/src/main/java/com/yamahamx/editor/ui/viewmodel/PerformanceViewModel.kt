@@ -898,7 +898,12 @@ class PerformanceViewModel(
             _currentLoadedPerformanceId.value = if (working.id == "current_session") lastId else working.id
             val restoredParts = (0..15).map { idx ->
                 val savedPart = working.parts.firstOrNull { it.partIndex == idx }
-                savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+                val partState = savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+                if (idx == 0 && (partState.receiveChannel == 127 || partState.receiveChannel !in 0..15)) {
+                    partState.copy(receiveChannel = 0)
+                } else {
+                    partState
+                }
             }
             _uiState.update { state ->
                 state.copy(
@@ -918,7 +923,12 @@ class PerformanceViewModel(
                 _currentLoadedPerformanceId.value = saved.id
                 val restoredParts = (0..15).map { idx ->
                     val savedPart = saved.parts.firstOrNull { it.partIndex == idx }
-                    savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+                    val partState = savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+                    if (idx == 0 && (partState.receiveChannel == 127 || partState.receiveChannel !in 0..15)) {
+                        partState.copy(receiveChannel = 0)
+                    } else {
+                        partState
+                    }
                 }
                 _uiState.update { state ->
                     state.copy(
@@ -1072,7 +1082,12 @@ class PerformanceViewModel(
         // 1. Update UI state in app - explicitly guarantee all 16 parts in order
         val restoredParts = (0..15).map { idx ->
             val savedPart = performance.parts.firstOrNull { it.partIndex == idx }
-            savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+            val partState = savedPart?.toMultiPartState() ?: MultiPartState(partIndex = idx)
+            if (idx == 0 && (partState.receiveChannel == 127 || partState.receiveChannel !in 0..15)) {
+                partState.copy(receiveChannel = 0)
+            } else {
+                partState
+            }
         }
         spilloverRouter.syncFromParts(restoredParts)
         _uiState.update { state ->
@@ -1131,8 +1146,9 @@ class PerformanceViewModel(
 
         // Multi Part Parameters
         currentState.parts.forEach { part ->
-            // 1. Receive Channel
-            batchMessages.add(YamahaSysExEncoder.setPartReceiveChannel(part.partIndex, part.receiveChannel))
+            // 1. Receive Channel (Part 1 is strictly protected from being sent Off 127)
+            val rxCh = if (part.partIndex == 0 && (part.receiveChannel == 127 || part.receiveChannel !in 0..15)) 0 else part.receiveChannel
+            batchMessages.add(YamahaSysExEncoder.setPartReceiveChannel(part.partIndex, rxCh))
 
             // 2. Voice Change (Bank MSB, Bank LSB, Program Change)
             val voiceChangeMsgs = YamahaSysExEncoder.createVoiceChangeMessages(
@@ -1270,8 +1286,11 @@ class PerformanceViewModel(
 
         // 2. Determine all parts that should now be coupled to the physical keyboard (Ch 1 = 0)
         val currentParts = _uiState.value.parts
-        val layerIndices = currentParts.filter { it.isLayerSelected }.map { it.partIndex }.toSet()
-        val activeCh0Indices = layerIndices + targetIndex
+        val layerIndices = currentParts.filter { it.partIndex > 0 && it.isLayerSelected }.map { it.partIndex }.toSet()
+        // Part 1 (partIndex == 0) is the permanent keyboard base and remains on Ch 1 (0) unless explicitly changed in dropdown
+        val part0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
+        val baseP0Index = if (part0Ch in 0..15) setOf(0) else emptySet()
+        val activeCh0Indices = baseP0Index + layerIndices + targetIndex
 
         // 3. Compute seamless Receive Channel transition without cutting sounding voices
         val transition = spilloverRouter.computeSeamlessPartSwitch(
@@ -1281,12 +1300,21 @@ class PerformanceViewModel(
 
         val updatedParts = currentParts.map { part ->
             val idx = part.partIndex
-            part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
+            if (idx == 0) {
+                val currentP0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
+                val safeP0Ch = if (currentP0Ch in 0..15) currentP0Ch else 0
+                part.copy(receiveChannel = safeP0Ch)
+            } else {
+                part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
+            }
         }
 
         val commonNow = _uiState.value.common
+        val safeTransitionMessages = transition.midiMessages.filterNot { msg ->
+            msg.contentEquals(YamahaSysExEncoder.setPartReceiveChannel(0, 127))
+        }
         val routingAndExprMessages = buildList {
-            addAll(transition.midiMessages)
+            addAll(safeTransitionMessages)
             updatedParts.forEach { part ->
                 add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, shouldPartReceiveExpression(part, commonNow)))
                 add(YamahaSysExEncoder.setPartSustainReceiveSwitch(part.partIndex, true))
@@ -1346,9 +1374,15 @@ class PerformanceViewModel(
      * - Does NOT send CC 120, CC 123, or CC 64=0 when adding or removing parts from the Layer.
      * - Disables Part 1-2 Link in hardware.
      * - Routes layered and focused parts to Channel 1 (0x00) while preserving spillover on outgoing parts.
+     * - Strictly preserves Part 1 (partIndex == 0) on Channel 1 (rxChannel = 0).
      */
     fun togglePartLayerSelection(partIndex: Int) {
         if (partIndex !in 0..15) return
+        if (partIndex == 0) {
+            // Part 1 is the permanent base keyboard voice on Yamaha MX.
+            // It remains on Channel 1 (rxChannel = 0) and cannot be toggled into/out of layer.
+            return
+        }
         if (!isProUser.value && partIndex >= 2) {
             openUpgradeDialog()
             return
@@ -1372,30 +1406,38 @@ class PerformanceViewModel(
             }
         }
 
-        val layerIndices = updatedPartsState.filter { it.isLayerSelected }.map { it.partIndex }.toSet()
-        val focusedIdx = _uiState.value.activeFocusedPartIndex
+        // 3. Determine all parts coupled to physical keyboard keys (Ch 1 = 0x00):
+        // Part 1 (partIndex == 0) is the permanent base voice and ALWAYS remains on Channel 1 (rxChannel = 0).
+        // Secondary parts (1..15) with isLayerSelected == true couple to Channel 1 (0).
+        val layerIndices = updatedPartsState.filter { it.partIndex > 0 && it.isLayerSelected }.map { it.partIndex }.toSet()
+        val activeCh0Indices = setOf(0) + layerIndices
 
-        val activeCh0Indices = if (layerIndices.isEmpty()) {
-            setOf(focusedIdx)
-        } else {
-            if (focusedIdx != 0) layerIndices + focusedIdx else layerIndices
-        }
-
-        // 3. Compute seamless Receive Channel transition without cutting sounding voices
+        // 4. Compute seamless Receive Channel transition without cutting sounding voices
         val transition = spilloverRouter.computeSeamlessPartSwitch(
             currentParts = updatedPartsState,
             activeCh0PartIndices = activeCh0Indices
         )
 
+        // Part 1 rxChannel is strictly protected: always 0 (Ch 1) unless explicitly set in dropdown
         val finalParts = updatedPartsState.map { part ->
             val idx = part.partIndex
-            part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
+            if (idx == 0) {
+                val currentP0Ch = currentParts.firstOrNull()?.receiveChannel ?: 0
+                val safeP0Ch = if (currentP0Ch in 0..15) currentP0Ch else 0
+                part.copy(receiveChannel = safeP0Ch)
+            } else {
+                part.copy(receiveChannel = transition.updatedReceiveChannels[idx])
+            }
         }
 
-        // 4. Transmit MIDI/SysEx sequence including Receive Expression isolation per Part
+        // 5. Transmit MIDI/SysEx sequence - ensuring NO Off (127) SysEx is ever transmitted for Part 1
         val commonNow = _uiState.value.common
+        val safeTransitionMessages = transition.midiMessages.filterNot { msg ->
+            msg.contentEquals(YamahaSysExEncoder.setPartReceiveChannel(0, 127))
+        }
+
         val routingAndExprMessages = buildList {
-            addAll(transition.midiMessages)
+            addAll(safeTransitionMessages)
             finalParts.forEach { part ->
                 add(YamahaSysExEncoder.setPartExpressionReceiveSwitch(part.partIndex, shouldPartReceiveExpression(part, commonNow)))
                 add(YamahaSysExEncoder.setPartSustainReceiveSwitch(part.partIndex, true))
@@ -1405,7 +1447,7 @@ class PerformanceViewModel(
             midiManager.sendKeyedSequence("CHANNEL_ROUTING", routingAndExprMessages, delayMs = 2L)
         }
 
-        // 5. Update UI State
+        // 6. Update UI State
         _uiState.update { state ->
             state.copy(
                 parts = finalParts
@@ -1414,6 +1456,53 @@ class PerformanceViewModel(
         persistCurrentWorkingState()
 
         storageRepository.saveLastActiveState(_currentLoadedPerformanceId.value, _uiState.value.activeFocusedPartIndex)
+    }
+
+    fun togglePartLayer(partIndex: Int) {
+        togglePartLayerSelection(partIndex)
+    }
+
+    fun setPartLayer(partIndex: Int, isLayer: Boolean) {
+        if (partIndex !in 0..15) return
+        if (partIndex == 0) return
+        if (!isProUser.value && partIndex >= 2) {
+            openUpgradeDialog()
+            return
+        }
+        val currentPart = _uiState.value.parts.getOrNull(partIndex) ?: return
+        if (currentPart.isLayerSelected == isLayer) return
+        togglePartLayerSelection(partIndex)
+    }
+
+    fun syncRxChannels() {
+        val currentParts = _uiState.value.parts
+        val updatedParts = currentParts.map { part ->
+            when {
+                part.partIndex == 0 -> {
+                    // Part 1 is permanent base on Ch 1 (0). Never Off unless explicitly set in dropdown.
+                    if (part.receiveChannel !in 0..15) part.copy(receiveChannel = 0) else part
+                }
+                part.isLayerSelected -> {
+                    part.copy(receiveChannel = 0)
+                }
+                part.receiveChannel == 0 && !part.isLayerSelected -> {
+                    // Secondary part exiting layer returns to its natural channel (partIndex)
+                    part.copy(receiveChannel = part.partIndex)
+                }
+                else -> part
+            }
+        }
+
+        val messages = mutableListOf<ByteArray>()
+        updatedParts.forEach { part ->
+            val rxCh = if (part.partIndex == 0 && part.receiveChannel !in 0..15) 0 else part.receiveChannel
+            messages.add(YamahaSysExEncoder.setPartReceiveChannel(part.partIndex, rxCh))
+        }
+
+        spilloverRouter.syncFromParts(updatedParts)
+        midiManager.sendKeyedSequence("CHANNEL_ROUTING", messages, delayMs = 2L)
+        _uiState.update { it.copy(parts = updatedParts) }
+        persistCurrentWorkingState()
     }
 
     // --- Voice Selection with Immediate SysEx Transmission ---

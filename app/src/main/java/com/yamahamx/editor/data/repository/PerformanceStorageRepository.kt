@@ -48,8 +48,9 @@ class PerformanceStorageRepository(private val context: Context) {
                         }
                         return if (list.isEmpty()) null else list
                     }
-                    if (obj.has("parts") || obj.has("name")) {
-                        return listOf(SavedPerformance.fromJson(obj))
+                    if (obj.has("parts")) {
+                        val perf = SavedPerformance.fromJson(obj)
+                        return if (perf.parts.isEmpty()) null else listOf(perf)
                     }
                     return null
                 }
@@ -358,8 +359,8 @@ class PerformanceStorageRepository(private val context: Context) {
         // 1. Preset: Grand Piano + Warm Strings Layer
         val parts1 = List(16) { idx ->
             when (idx) {
-                0 -> SavedPart(0, SavedVoice.fromYamahaVoice(grand), volume = 110, pan = 64, reverbSend = 24)
-                1 -> SavedPart(1, SavedVoice.fromYamahaVoice(strings), volume = 85, pan = 64, reverbSend = 40)
+                0 -> SavedPart(0, SavedVoice.fromYamahaVoice(grand), volume = 110, pan = 64, reverbSend = 24, receiveChannel = 0, isLayerSelected = false)
+                1 -> SavedPart(1, SavedVoice.fromYamahaVoice(strings), volume = 85, pan = 64, reverbSend = 40, receiveChannel = 0, isLayerSelected = true)
                 else -> SavedPart(idx, SavedVoice.fromYamahaVoice(VoiceRepository.getDefaultVoiceForPart(idx)), isMuted = true)
             }
         }
@@ -373,8 +374,8 @@ class PerformanceStorageRepository(private val context: Context) {
         // 2. Preset: Worship Pad + Rhodes
         val parts2 = List(16) { idx ->
             when (idx) {
-                0 -> SavedPart(0, SavedVoice.fromYamahaVoice(rhodes), volume = 105, pan = 50, reverbSend = 32, chorusSend = 20)
-                1 -> SavedPart(1, SavedVoice.fromYamahaVoice(pad), volume = 75, pan = 78, reverbSend = 50)
+                0 -> SavedPart(0, SavedVoice.fromYamahaVoice(rhodes), volume = 105, pan = 50, reverbSend = 32, chorusSend = 20, receiveChannel = 0, isLayerSelected = false)
+                1 -> SavedPart(1, SavedVoice.fromYamahaVoice(pad), volume = 75, pan = 78, reverbSend = 50, receiveChannel = 0, isLayerSelected = true)
                 else -> SavedPart(idx, SavedVoice.fromYamahaVoice(VoiceRepository.getDefaultVoiceForPart(idx)), isMuted = true)
             }
         }
