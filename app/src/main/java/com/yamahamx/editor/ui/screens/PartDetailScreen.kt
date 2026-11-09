@@ -547,13 +547,19 @@ fun PartDetailScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f, fill = false)
+                    ) {
                         Text(
                             text = stringResource(R.string.section_mix_effects),
                             color = SynthLightText,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                            letterSpacing = 1.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
@@ -752,8 +758,8 @@ fun PartDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(top = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (bandIdx in 0..4) {
                                 CompactEqBandHorizontalRow(
@@ -970,8 +976,8 @@ fun PartDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 10.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                .padding(top = 6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             CompactFaderRow(
                                 title = stringResource(R.string.comp_param_threshold),
@@ -1179,7 +1185,8 @@ fun PartDetailScreen(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.sp,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
@@ -1384,7 +1391,8 @@ fun PartDetailScreen(
                             letterSpacing = 1.sp,
                             maxLines = 1,
                             softWrap = false,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
@@ -1682,7 +1690,8 @@ fun CollapsibleSectionHeader(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Icon(
@@ -1705,7 +1714,8 @@ fun CollapsibleSectionHeader(
 
 /**
  * Full-width (100%) compact horizontal EQ band strip for Portrait / Narrow screens:
- * Band Label on the left, Slider in the middle, and non-wrapping digital dB box ("0.0 dB") on the right.
+ * Line 1: Parameter Name (left) & Digital dB Readout Box (right, tap to reset flat).
+ * Line 2: Fader Sandwich: [-] button + Slider (weight 1f) + [+] button.
  */
 @Composable
 private fun CompactEqBandHorizontalRow(
@@ -1714,74 +1724,122 @@ private fun CompactEqBandHorizontalRow(
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(SynthDarkBackground.copy(alpha = 0.65f))
-            .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .border(1.dp, SynthCardBorder, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
-        // Left: Band Label
-        Text(
-            text = title.uppercase(),
-            color = SynthMutedGray,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(114.dp)
-        )
-
-        // Middle: Slider
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = 0f..127f,
-            colors = SliderDefaults.colors(
-                thumbColor = SynthLightText,
-                activeTrackColor = YamahaCyan,
-                inactiveTrackColor = SynthFaderTrack
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .height(24.dp)
-        )
-
-        // Right: Digital dB Readout Box ("0.0 dB", "+2.5 dB", "-4.0 dB") — never wraps vertically
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .defaultMinSize(minWidth = 68.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(SynthDarkBackground)
-                .border(
-                    width = 1.dp,
-                    color = if (value != 64) YamahaCyan.copy(alpha = 0.65f) else YamahaCyan.copy(alpha = 0.35f),
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .clickable(enabled = value != 64) { onValueChange(64) }
-                .padding(horizontal = 8.dp, vertical = 3.dp)
+        // Line 1: Title & Value Box
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = YamahaSysExEncoder.formatEqGainDb(value),
-                color = if (value != 64) YamahaCyan else SynthLightText,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
+                text = title.uppercase(),
+                color = SynthMutedGray,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
                 maxLines = 1,
-                softWrap = false
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+
+            // Right: Digital dB Readout Box ("0.0 dB", "+2.5 dB", "-4.0 dB") — tap to reset flat (64)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 58.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(SynthDarkBackground)
+                    .border(
+                        width = 1.dp,
+                        color = if (value != 64) YamahaCyan.copy(alpha = 0.65f) else YamahaCyan.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .clickable(enabled = value != 64) { onValueChange(64) }
+                    .padding(horizontal = 6.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = YamahaSysExEncoder.formatEqGainDb(value),
+                    color = if (value != 64) YamahaCyan else SynthLightText,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+
+        // Line 2: Fader Sandwich [-] | Slider | [+]
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Decrement button [-]
+            IconButton(
+                onClick = {
+                    val next = (value - 1).coerceIn(0, 127)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value > 0,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = stringResource(R.string.cd_decrease),
+                    tint = if (value > 0) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            // Slider
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onValueChange(it.toInt()) },
+                valueRange = 0f..127f,
+                colors = SliderDefaults.colors(
+                    thumbColor = SynthLightText,
+                    activeTrackColor = YamahaCyan,
+                    inactiveTrackColor = SynthFaderTrack
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(24.dp)
+                    .padding(horizontal = 4.dp)
+            )
+
+            // Increment button [+]
+            IconButton(
+                onClick = {
+                    val next = (value + 1).coerceIn(0, 127)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value < 127,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.cd_increase),
+                    tint = if (value < 127) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }
 
 /**
  * Full-width (100%) compact horizontal fader row for Compressor and Part controls:
- * Label on the left, Slider in the middle, and formatted readout box on the right.
+ * Line 1: Parameter Name (left) & Formatted Value Readout Box (right).
+ * Line 2: Fader Sandwich: [-] button + Slider (weight 1f) + [+] button.
  */
 @Composable
 private fun CompactFaderRow(
@@ -1792,66 +1850,116 @@ private fun CompactFaderRow(
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    val minVal = valueRange.start.toInt()
+    val maxVal = valueRange.endInclusive.toInt()
+
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(SynthDarkBackground.copy(alpha = 0.65f))
-            .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+            .border(1.dp, SynthCardBorder, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
-        // Left: Label
-        Text(
-            text = title.uppercase(),
-            color = SynthMutedGray,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.width(114.dp)
-        )
-
-        // Middle: Slider
-        Slider(
-            value = value.toFloat(),
-            onValueChange = { onValueChange(it.toInt()) },
-            valueRange = valueRange,
-            colors = SliderDefaults.colors(
-                thumbColor = SynthLightText,
-                activeTrackColor = YamahaCyan,
-                inactiveTrackColor = SynthFaderTrack
-            ),
-            modifier = Modifier
-                .weight(1f)
-                .height(24.dp)
-        )
-
-        // Right: Formatted Value Readout Box
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .defaultMinSize(minWidth = 68.dp)
-                .clip(RoundedCornerShape(4.dp))
-                .background(SynthDarkBackground)
-                .border(
-                    width = 1.dp,
-                    color = YamahaCyan.copy(alpha = 0.5f),
-                    shape = RoundedCornerShape(4.dp)
-                )
-                .padding(horizontal = 8.dp, vertical = 3.dp)
+        // Line 1: Title & Value Box
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = valueFormatter(value),
-                color = YamahaCyan,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
+                text = title.uppercase(),
+                color = SynthMutedGray,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
                 maxLines = 1,
-                softWrap = false
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
+
+            // Right: Formatted Value Readout Box
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 58.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(SynthDarkBackground)
+                    .border(
+                        width = 1.dp,
+                        color = YamahaCyan.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = valueFormatter(value),
+                    color = YamahaCyan,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+
+        // Line 2: Fader Sandwich [-] | Slider | [+]
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Decrement button [-]
+            IconButton(
+                onClick = {
+                    val next = (value - 1).coerceIn(minVal, maxVal)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value > minVal,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = stringResource(R.string.cd_decrease),
+                    tint = if (value > minVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            // Slider
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onValueChange(it.toInt()) },
+                valueRange = valueRange,
+                colors = SliderDefaults.colors(
+                    thumbColor = SynthLightText,
+                    activeTrackColor = YamahaCyan,
+                    inactiveTrackColor = SynthFaderTrack
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(24.dp)
+                    .padding(horizontal = 4.dp)
+            )
+
+            // Increment button [+]
+            IconButton(
+                onClick = {
+                    val next = (value + 1).coerceIn(minVal, maxVal)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value < maxVal,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.cd_increase),
+                    tint = if (value < maxVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
         }
     }
 }

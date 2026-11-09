@@ -110,7 +110,8 @@ fun NoteRangeSelector(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false)
                     )
                     if (onToggleExpand != null) {
                         Spacer(modifier = Modifier.width(4.dp))

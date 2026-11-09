@@ -14,6 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -574,45 +578,120 @@ private fun CompInlineSliderRow(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     steps: Int,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Row(
-        modifier = Modifier
+    val minVal = valueRange.start
+    val maxVal = valueRange.endInclusive
+
+    Column(
+        modifier = modifier
             .fillMaxWidth()
-            .height(32.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(RoundedCornerShape(8.dp))
+            .background(SynthDarkBackground.copy(alpha = 0.65f))
+            .border(1.dp, SynthCardBorder, RoundedCornerShape(8.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
-        Text(
-            text = title,
-            color = SynthMutedGray,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.width(62.dp)
-        )
-
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            steps = steps,
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 4.dp),
-            colors = SliderDefaults.colors(
-                thumbColor = YamahaCyan,
-                activeTrackColor = YamahaCyan,
-                inactiveTrackColor = SynthCardBorder
+        // Line 1: Title & Value Box
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title.uppercase(),
+                color = SynthMutedGray,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
-        )
 
-        Text(
-            text = valueText,
-            color = SynthLightText,
-            fontSize = 11.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.End,
-            modifier = Modifier.width(52.dp)
-        )
+            // Right: Formatted Value Readout Box
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .defaultMinSize(minWidth = 56.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(SynthDarkBackground)
+                    .border(
+                        width = 1.dp,
+                        color = YamahaCyan.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    .padding(horizontal = 6.dp, vertical = 1.dp)
+            ) {
+                Text(
+                    text = valueText,
+                    color = YamahaCyan,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false
+                )
+            }
+        }
+
+        // Line 2: Fader Sandwich [-] | Slider | [+]
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Decrement button [-]
+            IconButton(
+                onClick = {
+                    val next = (value - 1f).coerceIn(minVal, maxVal)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value > minVal,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Remove,
+                    contentDescription = stringResource(R.string.cd_decrease),
+                    tint = if (value > minVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+
+            // Slider
+            Slider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = valueRange,
+                steps = steps,
+                colors = SliderDefaults.colors(
+                    thumbColor = YamahaCyan,
+                    activeTrackColor = YamahaCyan,
+                    inactiveTrackColor = SynthCardBorder
+                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(24.dp)
+                    .padding(horizontal = 4.dp)
+            )
+
+            // Increment button [+]
+            IconButton(
+                onClick = {
+                    val next = (value + 1f).coerceIn(minVal, maxVal)
+                    if (next != value) onValueChange(next)
+                },
+                enabled = value < maxVal,
+                modifier = Modifier.size(28.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = stringResource(R.string.cd_increase),
+                    tint = if (value < maxVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
     }
 }

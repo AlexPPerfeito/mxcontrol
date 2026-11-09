@@ -175,7 +175,7 @@
 
     <!-- Splits & Teclado -->
     <string name="section_keyboard_overview">VISÃO GERAL DO TECLADO (SPLITS &amp; LAYERS)</string>
-    <string name="section_note_limit">NOTE LIMIT / KEYBOARD SPLIT</string>
+    <string name="section_note_limit">NOTE LIMIT</string>
     <string name="split_full_format">Full (%1$s..%2$s)</string>
     <string name="split_lower_format">Lower (%1$s..%2$s)</string>
     <string name="split_upper_format">Upper (%1$s..%2$s)</string>
@@ -454,7 +454,7 @@
     <string name="promo_black_friday_desc">De 01 a 07 de Novembro: Multi-Layer (3+ partes), Bluetooth MIDI e todos os recursos Pro liberados gratuitamente para teste!</string>
 
     <!-- Compressor / Insert FX -->
-    <string name="section_compressor_insert_fx">COMPRESSOR / INSERT FX</string>
+    <string name="section_compressor_insert_fx">COMPRESSOR</string>
     <string name="btn_comp_graph">GRÁFICO</string>
     <string name="compressor_graph_title">CURVA DINÂMICA DE COMPRESSÃO</string>
     <string name="comp_param_thresh_short">THRESH</string>

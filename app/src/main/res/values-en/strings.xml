@@ -153,7 +153,7 @@
 
     <!-- Splits & Keyboard -->
     <string name="section_keyboard_overview">KEYBOARD OVERVIEW (SPLITS &amp; LAYERS)</string>
-    <string name="section_note_limit">NOTE LIMIT / KEYBOARD SPLIT</string>
+    <string name="section_note_limit">NOTE LIMIT</string>
     <string name="split_full_format">Full (%1$s..%2$s)</string>
     <string name="split_lower_format">Lower (%1$s..%2$s)</string>
     <string name="split_upper_format">Upper (%1$s..%2$s)</string>
@@ -392,7 +392,7 @@
     <string name="notification_default_part">Part 1: CncrtGrand</string>
 
     <!-- Compressor / Insert FX -->
-    <string name="section_compressor_insert_fx">COMPRESSOR / INSERT FX</string>
+    <string name="section_compressor_insert_fx">COMPRESSOR</string>
     <string name="btn_comp_graph">GRAPH</string>
     <string name="compressor_graph_title">DYNAMIC COMPRESSION CURVE</string>
     <string name="comp_param_thresh_short">THRESH</string>
