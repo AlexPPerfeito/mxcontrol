@@ -1935,6 +1935,10 @@ class PerformanceViewModel(
      */
     fun setMasterEqBandGain(bandIndex: Int, gainValue: Int) {
         if (bandIndex !in 0..4) return
+        if (!isProUser.value && bandIndex >= 2) {
+            openUpgradeDialog()
+            return
+        }
         val clamped = gainValue.coerceIn(0, 127)
         _uiState.update { state ->
             val currentGains = state.common.masterEqGains
@@ -2037,6 +2041,10 @@ class PerformanceViewModel(
 
     fun setPartCompressorRatio(partIndex: Int, ratio: Int) {
         if (partIndex !in 0..15) return
+        if (!isProUser.value) {
+            openUpgradeDialog()
+            return
+        }
         val clamped = ratio.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1)
         updatePart(partIndex) { it.copy(compressorRatio = clamped) }
 
@@ -2050,6 +2058,10 @@ class PerformanceViewModel(
 
     fun setPartCompressorAttack(partIndex: Int, attack: Int) {
         if (partIndex !in 0..15) return
+        if (!isProUser.value) {
+            openUpgradeDialog()
+            return
+        }
         val clamped = attack.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1)
         updatePart(partIndex) { it.copy(compressorAttack = clamped) }
 
@@ -2063,6 +2075,10 @@ class PerformanceViewModel(
 
     fun setPartCompressorRelease(partIndex: Int, release: Int) {
         if (partIndex !in 0..15) return
+        if (!isProUser.value) {
+            openUpgradeDialog()
+            return
+        }
         val clamped = release.coerceIn(0, YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1)
         updatePart(partIndex) { it.copy(compressorRelease = clamped) }
 

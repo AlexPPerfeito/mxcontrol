@@ -522,6 +522,8 @@ fun PerformanceScreen(
                             part = currentPart,
                             isFocused = currentPart.partIndex == state.activeFocusedPartIndex,
                             isMidiActive = partActivityStates[currentPart.partIndex] == true,
+                            isProUser = isProUser,
+                            onUpgradeRequested = { viewModel.openUpgradeDialog() },
                             anySoloActive = state.anySoloActive,
                             onPartIndexChange = onSelectPart,
                             onFocusPart = { viewModel.switchLiveFocusedPart(currentPart.partIndex) },

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Layers
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
@@ -35,6 +36,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
@@ -65,6 +67,8 @@ fun PartDetailScreen(
     part: MultiPartState,
     isFocused: Boolean,
     isMidiActive: Boolean = false,
+    isProUser: Boolean = true,
+    onUpgradeRequested: () -> Unit = {},
     onPartIndexChange: (Int) -> Unit,
     onFocusPart: () -> Unit,
     onVoiceChange: (YamahaVoice) -> Unit,
@@ -715,22 +719,44 @@ fun PartDetailScreen(
                     trailingContent = {
                         Surface(
                             shape = RoundedCornerShape(6.dp),
-                            color = YamahaCyan.copy(alpha = 0.15f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, YamahaCyan.copy(alpha = 0.7f)),
+                            color = if (isProUser) YamahaCyan.copy(alpha = 0.15f) else Color(0xFF232B3E),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                if (isProUser) YamahaCyan.copy(alpha = 0.7f) else YamahaGold.copy(alpha = 0.6f)
+                            ),
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .clickable { showMasterEqGraphDialog = true }
+                                .clickable {
+                                    if (isProUser) {
+                                        showMasterEqGraphDialog = true
+                                    } else {
+                                        onUpgradeRequested()
+                                    }
+                                }
                         ) {
-                            Text(
-                                text = stringResource(R.string.btn_eq_graph),
-                                color = YamahaCyan,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = 0.6.sp,
-                                maxLines = 1,
-                                softWrap = false,
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
+                            ) {
+                                if (!isProUser) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Recurso Pro",
+                                        tint = YamahaGold,
+                                        modifier = Modifier.size(11.dp)
+                                    )
+                                }
+                                Text(
+                                    text = stringResource(R.string.btn_eq_graph),
+                                    color = if (isProUser) YamahaCyan else YamahaGold,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    letterSpacing = 0.6.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         }
                     }
                 )
@@ -762,10 +788,13 @@ fun PartDetailScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             for (bandIdx in 0..4) {
+                                val isBandLocked = !isProUser && bandIdx >= 2
                                 CompactEqBandHorizontalRow(
                                     title = bandTitles[bandIdx],
                                     value = eqGains[bandIdx],
-                                    onValueChange = { onMasterEqBandGainChange(bandIdx, it) }
+                                    onValueChange = { onMasterEqBandGainChange(bandIdx, it) },
+                                    isLocked = isBandLocked,
+                                    onLockedClick = onUpgradeRequested
                                 )
                             }
 
@@ -841,6 +870,8 @@ fun PartDetailScreen(
                                     onValueChange = { onMasterEqBandGainChange(2, it) },
                                     valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -851,6 +882,8 @@ fun PartDetailScreen(
                                     onValueChange = { onMasterEqBandGainChange(3, it) },
                                     valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -868,6 +901,8 @@ fun PartDetailScreen(
                                     onValueChange = { onMasterEqBandGainChange(4, it) },
                                     valueFormatter = { YamahaSysExEncoder.formatEqGainDb(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -938,22 +973,44 @@ fun PartDetailScreen(
 
                             Surface(
                                 shape = RoundedCornerShape(6.dp),
-                                color = YamahaCyan.copy(alpha = 0.15f),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, YamahaCyan.copy(alpha = 0.7f)),
+                                color = if (isProUser) YamahaCyan.copy(alpha = 0.15f) else Color(0xFF232B3E),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    if (isProUser) YamahaCyan.copy(alpha = 0.7f) else YamahaGold.copy(alpha = 0.6f)
+                                ),
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
-                                    .clickable { showCompressorGraphDialog = true }
+                                    .clickable {
+                                        if (isProUser) {
+                                            showCompressorGraphDialog = true
+                                        } else {
+                                            onUpgradeRequested()
+                                        }
+                                    }
                             ) {
-                                Text(
-                                    text = stringResource(R.string.btn_comp_graph),
-                                    color = YamahaCyan,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    letterSpacing = 0.6.sp,
-                                    maxLines = 1,
-                                    softWrap = false,
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
+                                ) {
+                                    if (!isProUser) {
+                                        Icon(
+                                            imageVector = Icons.Default.Lock,
+                                            contentDescription = "Recurso Pro",
+                                            tint = YamahaGold,
+                                            modifier = Modifier.size(11.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = stringResource(R.string.btn_comp_graph),
+                                        color = if (isProUser) YamahaCyan else YamahaGold,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        letterSpacing = 0.6.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
                             }
                         }
                     }
@@ -1000,7 +1057,9 @@ fun PartDetailScreen(
                                 value = part.compressorRatio,
                                 valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1).toFloat(),
                                 valueFormatter = { YamahaSysExEncoder.formatCompressorRatio(it) },
-                                onValueChange = onCompressorRatioChange
+                                onValueChange = onCompressorRatioChange,
+                                isLocked = !isProUser,
+                                onLockedClick = onUpgradeRequested
                             )
 
                             CompactFaderRow(
@@ -1008,7 +1067,9 @@ fun PartDetailScreen(
                                 value = part.compressorAttack,
                                 valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1).toFloat(),
                                 valueFormatter = { YamahaSysExEncoder.formatCompressorAttackMs(it) },
-                                onValueChange = onCompressorAttackChange
+                                onValueChange = onCompressorAttackChange,
+                                isLocked = !isProUser,
+                                onLockedClick = onUpgradeRequested
                             )
 
                             CompactFaderRow(
@@ -1016,7 +1077,9 @@ fun PartDetailScreen(
                                 value = part.compressorRelease,
                                 valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1).toFloat(),
                                 valueFormatter = { YamahaSysExEncoder.formatCompressorReleaseMs(it) },
-                                onValueChange = onCompressorReleaseChange
+                                onValueChange = onCompressorReleaseChange,
+                                isLocked = !isProUser,
+                                onLockedClick = onUpgradeRequested
                             )
 
                             OutlinedButton(
@@ -1091,6 +1154,8 @@ fun PartDetailScreen(
                                     onValueChange = onCompressorRatioChange,
                                     valueFormatter = { YamahaSysExEncoder.formatCompressorRatio(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -1101,6 +1166,8 @@ fun PartDetailScreen(
                                     onValueChange = onCompressorAttackChange,
                                     valueFormatter = { YamahaSysExEncoder.formatCompressorAttackMs(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -1118,6 +1185,8 @@ fun PartDetailScreen(
                                     onValueChange = onCompressorReleaseChange,
                                     valueFormatter = { YamahaSysExEncoder.formatCompressorReleaseMs(it) },
                                     accentColor = YamahaCyan,
+                                    isLocked = !isProUser,
+                                    onLockedClick = onUpgradeRequested,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -1608,7 +1677,7 @@ fun PartDetailScreen(
     }
 
     // Master EQ 5-Band Interactive Curve Modal Dialog
-    if (showMasterEqGraphDialog) {
+    if (showMasterEqGraphDialog && isProUser) {
         MasterEqGraphDialog(
             masterEqGains = masterEqGains,
             onBandGainChange = onMasterEqBandGainChange,
@@ -1618,7 +1687,7 @@ fun PartDetailScreen(
     }
 
     // Compressor Dynamic Curve Modal Dialog
-    if (showCompressorGraphDialog) {
+    if (showCompressorGraphDialog && isProUser) {
         CompressorGraphDialog(
             partNumber = part.partNumber,
             threshold = part.compressorThreshold,
@@ -1722,116 +1791,159 @@ private fun CompactEqBandHorizontalRow(
     title: String,
     value: Int,
     onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLocked: Boolean = false,
+    onLockedClick: (() -> Unit)? = null
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(SynthDarkBackground.copy(alpha = 0.65f))
-            .border(1.dp, SynthCardBorder, RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp)
-    ) {
-        // Line 1: Title & Value Box
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title.uppercase(),
-                color = SynthMutedGray,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-
-            // Right: Digital dB Readout Box ("0.0 dB", "+2.5 dB", "-4.0 dB") — tap to reset flat (64)
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 58.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(SynthDarkBackground)
-                    .border(
-                        width = 1.dp,
-                        color = if (value != 64) YamahaCyan.copy(alpha = 0.65f) else YamahaCyan.copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .clickable(enabled = value != 64) { onValueChange(64) }
-                    .padding(horizontal = 6.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = YamahaSysExEncoder.formatEqGainDb(value),
-                    color = if (value != 64) YamahaCyan else SynthLightText,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(SynthDarkBackground.copy(alpha = if (isLocked) 0.35f else 0.65f))
+                .border(
+                    1.dp,
+                    if (isLocked) SynthCardBorder.copy(alpha = 0.5f) else SynthCardBorder,
+                    RoundedCornerShape(8.dp)
                 )
+                .graphicsLayer { alpha = if (isLocked) 0.5f else 1.0f }
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            // Line 1: Title & Value Box
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Text(
+                        text = title.uppercase(),
+                        color = if (isLocked) SynthMutedGray.copy(alpha = 0.6f) else SynthMutedGray,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isLocked) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Bloqueado",
+                            tint = YamahaGold,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+
+                // Right: Digital dB Readout Box ("0.0 dB", "+2.5 dB", "-4.0 dB") — tap to reset flat (64)
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 58.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(SynthDarkBackground)
+                        .border(
+                            width = 1.dp,
+                            color = when {
+                                isLocked -> YamahaCyan.copy(alpha = 0.2f)
+                                value != 64 -> YamahaCyan.copy(alpha = 0.65f)
+                                else -> YamahaCyan.copy(alpha = 0.35f)
+                            },
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .clickable(enabled = !isLocked && value != 64) { onValueChange(64) }
+                        .padding(horizontal = 6.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = YamahaSysExEncoder.formatEqGainDb(value),
+                        color = when {
+                            isLocked -> SynthMutedGray
+                            value != 64 -> YamahaCyan
+                            else -> SynthLightText
+                        },
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+
+            // Line 2: Fader Sandwich [-] | Slider | [+]
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Decrement button [-]
+                IconButton(
+                    onClick = {
+                        val next = (value - 1).coerceIn(0, 127)
+                        if (next != value) onValueChange(next)
+                    },
+                    enabled = !isLocked && value > 0,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = stringResource(R.string.cd_decrease),
+                        tint = if (!isLocked && value > 0) SynthMutedGray else SynthMutedGray.copy(alpha = 0.25f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Slider
+                Slider(
+                    value = value.toFloat(),
+                    onValueChange = { onValueChange(it.toInt()) },
+                    enabled = !isLocked,
+                    valueRange = 0f..127f,
+                    colors = SliderDefaults.colors(
+                        thumbColor = SynthLightText,
+                        activeTrackColor = YamahaCyan,
+                        inactiveTrackColor = SynthFaderTrack,
+                        disabledThumbColor = SynthMutedGray.copy(alpha = 0.4f),
+                        disabledActiveTrackColor = YamahaCyan.copy(alpha = 0.25f),
+                        disabledInactiveTrackColor = SynthFaderTrack.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(24.dp)
+                        .padding(horizontal = 4.dp)
+                )
+
+                // Increment button [+]
+                IconButton(
+                    onClick = {
+                        val next = (value + 1).coerceIn(0, 127)
+                        if (next != value) onValueChange(next)
+                    },
+                    enabled = !isLocked && value < 127,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.cd_increase),
+                        tint = if (!isLocked && value < 127) SynthMutedGray else SynthMutedGray.copy(alpha = 0.25f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
 
-        // Line 2: Fader Sandwich [-] | Slider | [+]
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Decrement button [-]
-            IconButton(
-                onClick = {
-                    val next = (value - 1).coerceIn(0, 127)
-                    if (next != value) onValueChange(next)
-                },
-                enabled = value > 0,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = stringResource(R.string.cd_decrease),
-                    tint = if (value > 0) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            // Slider
-            Slider(
-                value = value.toFloat(),
-                onValueChange = { onValueChange(it.toInt()) },
-                valueRange = 0f..127f,
-                colors = SliderDefaults.colors(
-                    thumbColor = SynthLightText,
-                    activeTrackColor = YamahaCyan,
-                    inactiveTrackColor = SynthFaderTrack
-                ),
+        if (isLocked && onLockedClick != null) {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(24.dp)
-                    .padding(horizontal = 4.dp)
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onLockedClick() }
             )
-
-            // Increment button [+]
-            IconButton(
-                onClick = {
-                    val next = (value + 1).coerceIn(0, 127)
-                    if (next != value) onValueChange(next)
-                },
-                enabled = value < 127,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.cd_increase),
-                    tint = if (value < 127) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
         }
     }
 }
@@ -1848,118 +1960,153 @@ private fun CompactFaderRow(
     valueRange: ClosedFloatingPointRange<Float>,
     valueFormatter: (Int) -> String,
     onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isLocked: Boolean = false,
+    onLockedClick: (() -> Unit)? = null
 ) {
     val minVal = valueRange.start.toInt()
     val maxVal = valueRange.endInclusive.toInt()
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(SynthDarkBackground.copy(alpha = 0.65f))
-            .border(1.dp, SynthCardBorder, RoundedCornerShape(8.dp))
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp)
-    ) {
-        // Line 1: Title & Value Box
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = title.uppercase(),
-                color = SynthMutedGray,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.5.sp,
-                maxLines = 1,
-                softWrap = false,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
-            )
-
-            // Right: Formatted Value Readout Box
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 58.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(SynthDarkBackground)
-                    .border(
-                        width = 1.dp,
-                        color = YamahaCyan.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .padding(horizontal = 6.dp, vertical = 1.dp)
-            ) {
-                Text(
-                    text = valueFormatter(value),
-                    color = YamahaCyan,
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    softWrap = false
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(SynthDarkBackground.copy(alpha = if (isLocked) 0.35f else 0.65f))
+                .border(
+                    1.dp,
+                    if (isLocked) SynthCardBorder.copy(alpha = 0.5f) else SynthCardBorder,
+                    RoundedCornerShape(8.dp)
                 )
+                .graphicsLayer { alpha = if (isLocked) 0.5f else 1.0f }
+                .padding(horizontal = 8.dp, vertical = 3.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            // Line 1: Title & Value Box
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
+                    Text(
+                        text = title.uppercase(),
+                        color = if (isLocked) SynthMutedGray.copy(alpha = 0.6f) else SynthMutedGray,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    if (isLocked) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Bloqueado",
+                            tint = YamahaGold,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
+
+                // Right: Formatted Value Readout Box
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 58.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(SynthDarkBackground)
+                        .border(
+                            width = 1.dp,
+                            color = if (isLocked) YamahaCyan.copy(alpha = 0.2f) else YamahaCyan.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        .padding(horizontal = 6.dp, vertical = 1.dp)
+                ) {
+                    Text(
+                        text = valueFormatter(value),
+                        color = if (isLocked) SynthMutedGray else YamahaCyan,
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
+            }
+
+            // Line 2: Fader Sandwich [-] | Slider | [+]
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Decrement button [-]
+                IconButton(
+                    onClick = {
+                        val next = (value - 1).coerceIn(minVal, maxVal)
+                        if (next != value) onValueChange(next)
+                    },
+                    enabled = !isLocked && value > minVal,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = stringResource(R.string.cd_decrease),
+                        tint = if (!isLocked && value > minVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.25f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                // Slider
+                Slider(
+                    value = value.toFloat(),
+                    onValueChange = { onValueChange(it.toInt()) },
+                    enabled = !isLocked,
+                    valueRange = valueRange,
+                    colors = SliderDefaults.colors(
+                        thumbColor = SynthLightText,
+                        activeTrackColor = YamahaCyan,
+                        inactiveTrackColor = SynthFaderTrack,
+                        disabledThumbColor = SynthMutedGray.copy(alpha = 0.4f),
+                        disabledActiveTrackColor = YamahaCyan.copy(alpha = 0.25f),
+                        disabledInactiveTrackColor = SynthFaderTrack.copy(alpha = 0.4f)
+                    ),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(24.dp)
+                        .padding(horizontal = 4.dp)
+                )
+
+                // Increment button [+]
+                IconButton(
+                    onClick = {
+                        val next = (value + 1).coerceIn(minVal, maxVal)
+                        if (next != value) onValueChange(next)
+                    },
+                    enabled = !isLocked && value < maxVal,
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = stringResource(R.string.cd_increase),
+                        tint = if (!isLocked && value < maxVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.25f),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
 
-        // Line 2: Fader Sandwich [-] | Slider | [+]
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Decrement button [-]
-            IconButton(
-                onClick = {
-                    val next = (value - 1).coerceIn(minVal, maxVal)
-                    if (next != value) onValueChange(next)
-                },
-                enabled = value > minVal,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = stringResource(R.string.cd_decrease),
-                    tint = if (value > minVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            // Slider
-            Slider(
-                value = value.toFloat(),
-                onValueChange = { onValueChange(it.toInt()) },
-                valueRange = valueRange,
-                colors = SliderDefaults.colors(
-                    thumbColor = SynthLightText,
-                    activeTrackColor = YamahaCyan,
-                    inactiveTrackColor = SynthFaderTrack
-                ),
+        if (isLocked && onLockedClick != null) {
+            Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .height(24.dp)
-                    .padding(horizontal = 4.dp)
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onLockedClick() }
             )
-
-            // Increment button [+]
-            IconButton(
-                onClick = {
-                    val next = (value + 1).coerceIn(minVal, maxVal)
-                    if (next != value) onValueChange(next)
-                },
-                enabled = value < maxVal,
-                modifier = Modifier.size(28.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(R.string.cd_increase),
-                    tint = if (value < maxVal) SynthMutedGray else SynthMutedGray.copy(alpha = 0.3f),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
         }
     }
 }
