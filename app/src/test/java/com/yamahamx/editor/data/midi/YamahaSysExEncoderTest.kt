@@ -182,6 +182,28 @@ class YamahaSysExEncoderTest {
     }
 
     @Test
+    fun testPartAegControlChangeMessages() {
+        // MIDI CC 73 (Attack Time) on Channel 0 (Ch 1)
+        val expectedCc73 = byteArrayOf(0xB0.toByte(), 73.toByte(), 100.toByte())
+        assertArrayEquals(expectedCc73, YamahaSysExEncoder.createControlChangeMessage(0, 73, 100))
+
+        // MIDI CC 75 (Decay Time) on Channel 1 (Ch 2)
+        val expectedCc75 = byteArrayOf(0xB1.toByte(), 75.toByte(), 50.toByte())
+        assertArrayEquals(expectedCc75, YamahaSysExEncoder.createControlChangeMessage(1, 75, 50))
+
+        // MIDI CC 72 (Release Time) on Channel 0 (Ch 1)
+        val expectedCc72 = byteArrayOf(0xB0.toByte(), 72.toByte(), 80.toByte())
+        assertArrayEquals(expectedCc72, YamahaSysExEncoder.createControlChangeMessage(0, 72, 80))
+
+        // MIDI CC 65 (Portamento Switch Off) and CC 5 (Portamento Time 0) on Channel 0
+        val expectedPortamentoOff = byteArrayOf(0xB0.toByte(), 65.toByte(), 0.toByte())
+        assertArrayEquals(expectedPortamentoOff, YamahaSysExEncoder.createControlChangeMessage(0, 65, 0))
+
+        val expectedPortamentoTime0 = byteArrayOf(0xB0.toByte(), 5.toByte(), 0.toByte())
+        assertArrayEquals(expectedPortamentoTime0, YamahaSysExEncoder.createControlChangeMessage(0, 5, 0))
+    }
+
+    @Test
     fun testPart12LinkSysEx() {
         // Part 1-2 Link ON (AddrHigh 0x36, AddrMid 0x00, AddrLow 0x44, Data 0x01)
         val expectedOn = byteArrayOf(

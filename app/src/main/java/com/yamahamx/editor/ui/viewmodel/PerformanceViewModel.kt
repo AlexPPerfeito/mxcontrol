@@ -1811,6 +1811,27 @@ class PerformanceViewModel(
     }
 
     /**
+     * Resets AEG Envelope (Attack, Decay, Release) to neutral 64 for the specified part via MIDI CC,
+     * and sends Portamento Off (CC 65 = 0) and Portamento Time 0 (CC 5 = 0) to ensure no residual portamento remains active.
+     */
+    fun resetPartAeg(partIndex: Int) {
+        if (partIndex !in 0..15) return
+        updatePart(partIndex) { it.copy(attack = 64, decay = 64, release = 64) }
+
+        val part = _uiState.value.parts.getOrNull(partIndex)
+        val channel = if (part != null && part.receiveChannel in 0..15) part.receiveChannel else partIndex
+
+        val messages = listOf(
+            YamahaSysExEncoder.createControlChangeMessage(channel, 73, 64),
+            YamahaSysExEncoder.createControlChangeMessage(channel, 75, 64),
+            YamahaSysExEncoder.createControlChangeMessage(channel, 72, 64),
+            YamahaSysExEncoder.createControlChangeMessage(channel, 65, 0), // Portamento Switch Off
+            YamahaSysExEncoder.createControlChangeMessage(channel, 5, 0)   // Portamento Time 0
+        )
+        midiManager.sendKeyedSequence("PART_${partIndex}_AEG_RESET", messages, delayMs = 5L)
+    }
+
+    /**
      * Sends MIDI Control Change 1 (Modulation Wheel / Rotary Speed) for the specified part.
      * Transmits on the part's assigned receiveChannel (0..15).
      * If modulation is bypassed/disabled for this part, the CC 1 message is suppressed.

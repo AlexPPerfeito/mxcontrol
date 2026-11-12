@@ -86,6 +86,7 @@ fun PartDetailScreen(
     onAttackChange: (Int) -> Unit = {},
     onDecayChange: (Int) -> Unit = {},
     onReleaseChange: (Int) -> Unit = {},
+    onResetAeg: () -> Unit = {},
     masterEqGains: List<Int> = List(5) { 64 },
     onMasterEqBandGainChange: (Int, Int) -> Unit = { _, _ -> },
     onResetMasterEq: () -> Unit = {},
@@ -1347,6 +1348,7 @@ fun PartDetailScreen(
                             val isAegModified = part.attack != 64 || part.decay != 64 || part.release != 64
                             OutlinedButton(
                                 onClick = {
+                                    onResetAeg()
                                     onAttackChange(64)
                                     onDecayChange(64)
                                     onReleaseChange(64)

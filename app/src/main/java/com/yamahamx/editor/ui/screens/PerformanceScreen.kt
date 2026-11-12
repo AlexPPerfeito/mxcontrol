@@ -542,6 +542,7 @@ fun PerformanceScreen(
                             onAttackChange = { att -> onAttackChange(currentPart.partIndex, att) },
                             onDecayChange = { dec -> onDecayChange(currentPart.partIndex, dec) },
                             onReleaseChange = { rel -> onReleaseChange(currentPart.partIndex, rel) },
+                            onResetAeg = { viewModel.resetPartAeg(currentPart.partIndex) },
                             masterEqGains = state.masterEqGains,
                             onMasterEqBandGainChange = { bandIdx, gain -> viewModel.setMasterEqBandGain(bandIdx, gain) },
                             onResetMasterEq = { viewModel.resetMasterEq() },

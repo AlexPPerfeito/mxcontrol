@@ -26,9 +26,9 @@
 
 | Parâmetro | Valor Atual | Situação / Notas |
 | :--- | :--- | :--- |
-| **versionCode** | `44` | Atual no `app/build.gradle.kts` |
-| **versionName** | `"1.3.7"` | Build 44 - Suporte completo ao idioma Espanhol (i18n / `values-es`), promoção Black Friday e alinhamento Pro |
-| **Versão Anterior (Play Store)** | `43` / `"1.3.6"` | Substituída por Build 44 (v1.3.7) |
+| **versionCode** | `54` | Atual no `app/build.gradle.kts` |
+| **versionName** | `"1.4.3"` | Build 54 - Correção envoltória AEG (Attack/Decay/Release via CC) e eliminação de portamento residual |
+| **Versão Anterior (Play Store)** | `53` / `"1.4.2"` | Substituída por Build 54 (v1.4.3) |
 | **Keystore de Release** | `app/mxcontrol-release.jks` | Alias: `mxcontrol` / Senha: `mxcontrol2026` |
 
 ---
