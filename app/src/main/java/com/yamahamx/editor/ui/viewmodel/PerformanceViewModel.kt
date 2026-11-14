@@ -1985,7 +1985,14 @@ class PerformanceViewModel(
         persistCurrentWorkingState()
 
         val messages = (0..4).map { bandIdx ->
-            YamahaSysExEncoder.setMasterEqBandGain(bandIdx, 64)
+            val msg = YamahaSysExEncoder.setMasterEqBandGain(bandIdx, 64)
+            // Immediately overwrite any pending throttled updates for this band
+            midiManager.sendThrottled("MASTER_EQ_BAND_$bandIdx", msg)
+            msg
+        }
+        Log.d("MidiSysEx", "=== resetMasterEq() ===")
+        messages.forEachIndexed { i, msg ->
+            Log.d("MidiSysEx", "TX Reset EQ Band $i: ${YamahaSysExEncoder.toHexString(msg)}")
         }
         midiManager.sendKeyedSequence("MASTER_EQ_RESET", messages, delayMs = 5L)
     }

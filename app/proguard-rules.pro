@@ -14,9 +14,11 @@
 # Preservar classes de ViewModels e modelos de UI
 -keep class com.yamahamx.editor.ui.viewmodel.** { *; }
 
-# Preservar Google Play Billing & In-App Updates
+# Preservar Google Play Billing & In-App Updates & Reviews
 -keep class com.android.billingclient.api.** { *; }
 -keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.gms.common.annotation.NoNullnessRewrite
+-dontwarn com.google.android.play.core.**
 
 # Preservar Kotlin Coroutines e Flow
 -keepnames class kotlinx.coroutines.** { *; }

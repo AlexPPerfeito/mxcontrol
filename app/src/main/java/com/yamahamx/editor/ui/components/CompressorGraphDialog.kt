@@ -73,6 +73,7 @@ fun CompressorGraphDialog(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
             configuration.screenWidthDp > configuration.screenHeightDp
+    val screenHeight = configuration.screenHeightDp.dp
     val density = LocalDensity.current
 
     val safeThreshold = threshold.coerceIn(0, 127)
@@ -109,8 +110,11 @@ fun CompressorGraphDialog(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.82f else 0.96f)
-                .widthIn(max = 560.dp)
+                .fillMaxWidth(if (isLandscape) 0.92f else 0.96f)
+                .widthIn(max = if (isLandscape) 720.dp else 560.dp)
+                .heightIn(max = screenHeight * 0.92f)
+                .systemBarsPadding()
+                .navigationBarsPadding()
                 .padding(horizontal = 8.dp, vertical = 6.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
@@ -120,8 +124,9 @@ fun CompressorGraphDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .heightIn(max = screenHeight * 0.92f)
                     .verticalScroll(rememberScrollState())
-                    .padding(if (isLandscape) 12.dp else 14.dp),
+                    .padding(if (isLandscape) 10.dp else 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row
@@ -168,52 +173,52 @@ fun CompressorGraphDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Numerical Feedback Badges
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    CompParamBadge(
-                        label = stringResource(R.string.comp_param_thresh_short),
-                        value = YamahaSysExEncoder.formatCompressorThresholdDb(safeThreshold),
-                        modifier = Modifier.weight(1f),
-                        isHighlighted = true
-                    )
-                    CompParamBadge(
-                        label = stringResource(R.string.comp_param_ratio),
-                        value = YamahaSysExEncoder.formatCompressorRatio(safeRatio),
-                        modifier = Modifier.weight(1f)
-                    )
-                    CompParamBadge(
-                        label = stringResource(R.string.comp_param_output_short),
-                        value = YamahaSysExEncoder.formatCompressorOutputGainDb(safeGain),
-                        modifier = Modifier.weight(1f),
-                        isHighlighted = true
-                    )
-                    CompParamBadge(
-                        label = stringResource(R.string.comp_param_attack_short),
-                        value = YamahaSysExEncoder.formatCompressorAttackMs(safeAttack),
-                        modifier = Modifier.weight(1f)
-                    )
-                    CompParamBadge(
-                        label = stringResource(R.string.comp_param_release_short),
-                        value = YamahaSysExEncoder.formatCompressorReleaseMs(safeRelease),
-                        modifier = Modifier.weight(1f)
-                    )
+                val badgesRow = @Composable {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(if (isLandscape) 2.dp else 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CompParamBadge(
+                            label = stringResource(R.string.comp_param_thresh_short),
+                            value = YamahaSysExEncoder.formatCompressorThresholdDb(safeThreshold),
+                            modifier = Modifier.weight(1f),
+                            isHighlighted = true
+                        )
+                        CompParamBadge(
+                            label = stringResource(R.string.comp_param_ratio),
+                            value = YamahaSysExEncoder.formatCompressorRatio(safeRatio),
+                            modifier = Modifier.weight(1f)
+                        )
+                        CompParamBadge(
+                            label = stringResource(R.string.comp_param_output_short),
+                            value = YamahaSysExEncoder.formatCompressorOutputGainDb(safeGain),
+                            modifier = Modifier.weight(1f),
+                            isHighlighted = true
+                        )
+                        CompParamBadge(
+                            label = stringResource(R.string.comp_param_attack_short),
+                            value = YamahaSysExEncoder.formatCompressorAttackMs(safeAttack),
+                            modifier = Modifier.weight(1f)
+                        )
+                        CompParamBadge(
+                            label = stringResource(R.string.comp_param_release_short),
+                            value = YamahaSysExEncoder.formatCompressorReleaseMs(safeRelease),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
                 // Interactive Dynamic Compression Canvas
-                val canvasHeight = if (isLandscape) 180.dp else 220.dp
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(canvasHeight)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(SynthDarkBackground)
-                        .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
-                ) {
+                val canvasBox = @Composable { boxHeight: androidx.compose.ui.unit.Dp ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(boxHeight)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(SynthDarkBackground)
+                            .border(1.dp, SynthCardBorder, RoundedCornerShape(10.dp))
+                    ) {
                     Canvas(
                         modifier = Modifier
                             .fillMaxSize()
@@ -434,100 +439,138 @@ fun CompressorGraphDialog(
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Compact Sliders: Ratio, Attack, Release
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    // Ratio Slider
-                    CompInlineSliderRow(
-                        title = stringResource(R.string.comp_ratio_title),
-                        valueText = YamahaSysExEncoder.formatCompressorRatio(safeRatio),
-                        value = safeRatio.toFloat(),
-                        valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1).toFloat(),
-                        steps = YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 2,
-                        onValueChange = { onRatioChange(it.roundToInt()) }
-                    )
-
-                    // Attack Slider
-                    CompInlineSliderRow(
-                        title = stringResource(R.string.comp_attack_title),
-                        valueText = YamahaSysExEncoder.formatCompressorAttackMs(safeAttack),
-                        value = safeAttack.toFloat(),
-                        valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1).toFloat(),
-                        steps = YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 2,
-                        onValueChange = { onAttackChange(it.roundToInt()) }
-                    )
-
-                    // Release Slider
-                    CompInlineSliderRow(
-                        title = stringResource(R.string.comp_release_title),
-                        valueText = YamahaSysExEncoder.formatCompressorReleaseMs(safeRelease),
-                        value = safeRelease.toFloat(),
-                        valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1).toFloat(),
-                        steps = YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 2,
-                        onValueChange = { onReleaseChange(it.roundToInt()) }
-                    )
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                // Compact Sliders: Ratio, Attack, Release
+                val slidersColumn = @Composable {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(if (isLandscape) 2.dp else 4.dp)
+                    ) {
+                        // Ratio Slider
+                        CompInlineSliderRow(
+                            title = stringResource(R.string.comp_ratio_title),
+                            valueText = YamahaSysExEncoder.formatCompressorRatio(safeRatio),
+                            value = safeRatio.toFloat(),
+                            valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 1).toFloat(),
+                            steps = YamahaSysExEncoder.COMPRESSOR_RATIO_LABELS.size - 2,
+                            onValueChange = { onRatioChange(it.roundToInt()) }
+                        )
+
+                        // Attack Slider
+                        CompInlineSliderRow(
+                            title = stringResource(R.string.comp_attack_title),
+                            valueText = YamahaSysExEncoder.formatCompressorAttackMs(safeAttack),
+                            value = safeAttack.toFloat(),
+                            valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 1).toFloat(),
+                            steps = YamahaSysExEncoder.COMPRESSOR_ATTACK_VALUES.size - 2,
+                            onValueChange = { onAttackChange(it.roundToInt()) }
+                        )
+
+                        // Release Slider
+                        CompInlineSliderRow(
+                            title = stringResource(R.string.comp_release_title),
+                            valueText = YamahaSysExEncoder.formatCompressorReleaseMs(safeRelease),
+                            value = safeRelease.toFloat(),
+                            valueRange = 0f..(YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 1).toFloat(),
+                            steps = YamahaSysExEncoder.COMPRESSOR_RELEASE_VALUES.size - 2,
+                            onValueChange = { onReleaseChange(it.roundToInt()) }
+                        )
+                    }
+                }
 
                 // Footer Actions: Reset Comp & Close
                 val isModified = safeThreshold != 72 || safeGain != 64 || safeRatio != 3 || safeAttack != 19 || safeRelease != 4
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = onResetComp,
-                        enabled = isModified,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(38.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = YamahaCyan,
-                            disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            if (isModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
-                        ),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                val actionButtonsRow = @Composable {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(if (isLandscape) 8.dp else 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.btn_reset_comp),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
+                        OutlinedButton(
+                            onClick = onResetComp,
+                            enabled = isModified,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = YamahaCyan,
+                                disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isModified) YamahaCyan.copy(alpha = 0.6f) else SynthCardBorder
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_reset_comp),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
 
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(38.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = YamahaCyan,
-                            contentColor = Color.Black
-                        ),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
-                    ) {
-                        Text(
-                            text = stringResource(R.string.btn_close),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            maxLines = 1,
-                            softWrap = false
-                        )
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = YamahaCyan,
+                                contentColor = Color.Black
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_close),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
                     }
+                }
+
+                if (isLandscape) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        // Coluna esquerda: Canvas da curva dinâmica + os 5 cards de leitura (THRESH, RATIO, OUTPUT, ATTACK, RELEASE)
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            canvasBox(145.dp)
+                            badgesRow()
+                        }
+
+                        // Coluna direita: 3 sliders (RATIO, ATTACK, RELEASE) + os botões Reset Comp e Fechar
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            slidersColumn()
+                            Spacer(modifier = Modifier.height(2.dp))
+                            actionButtonsRow()
+                        }
+                    }
+                } else {
+                    badgesRow()
+                    Spacer(modifier = Modifier.height(10.dp))
+                    canvasBox(220.dp)
+                    Spacer(modifier = Modifier.height(10.dp))
+                    slidersColumn()
+                    Spacer(modifier = Modifier.height(12.dp))
+                    actionButtonsRow()
                 }
             }
         }

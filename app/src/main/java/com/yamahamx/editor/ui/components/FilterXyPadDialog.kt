@@ -8,8 +8,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -52,6 +54,7 @@ fun FilterXyPadDialog(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
         configuration.screenWidthDp > configuration.screenHeightDp
+    val screenHeight = configuration.screenHeightDp.dp
 
     val clampedCutoff = cutoff.coerceIn(0, 127)
     val clampedResonance = resonance.coerceIn(0, 127)
@@ -67,9 +70,12 @@ fun FilterXyPadDialog(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.65f else 0.92f)
-                .widthIn(max = 420.dp)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .fillMaxWidth(if (isLandscape) 0.76f else 0.92f)
+                .widthIn(max = if (isLandscape) 540.dp else 420.dp)
+                .heightIn(max = screenHeight * 0.92f)
+                .systemBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
             border = BorderStroke(1.5.dp, YamahaCyan.copy(alpha = 0.7f)),
@@ -78,7 +84,9 @@ fun FilterXyPadDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(if (isLandscape) 14.dp else 18.dp),
+                    .heightIn(max = screenHeight * 0.92f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(if (isLandscape) 12.dp else 18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row: Badge & Part Info
@@ -135,48 +143,19 @@ fun FilterXyPadDialog(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Real-time Digital Coordinate Readout Row (Cutoff X & Resonance Y)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    FilterValueReadoutBox(
-                        label = stringResource(R.string.axis_cutoff_x),
-                        value = clampedCutoff,
-                        accentColor = YamahaCyan,
-                        modifier = Modifier.weight(1f)
-                    )
-                    FilterValueReadoutBox(
-                        label = stringResource(R.string.axis_resonance_y),
-                        value = clampedResonance,
-                        accentColor = SynthFaderActive,
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Interactive Square X/Y Pad Area
-                Box(
-                    modifier = Modifier
-                        .then(
-                            if (isLandscape) {
-                                Modifier.size(190.dp)
-                            } else {
-                                Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(1f)
-                            }
-                        )
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(SynthDarkBackground)
-                        .border(
-                            width = 1.5.dp,
-                            color = YamahaCyan.copy(alpha = 0.55f),
-                            shape = RoundedCornerShape(12.dp)
-                        )
+                val padBox = @Composable { boxModifier: Modifier ->
+                    Box(
+                        modifier = boxModifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(SynthDarkBackground)
+                            .border(
+                                width = 1.5.dp,
+                                color = YamahaCyan.copy(alpha = 0.55f),
+                                shape = RoundedCornerShape(12.dp)
+                            )
                         .pointerInput(Unit) {
                             fun updateFromPosition(pos: Offset, boxSize: IntSize) {
                                 if (boxSize.width <= 0 || boxSize.height <= 0) return
@@ -354,60 +333,165 @@ fun FilterXyPadDialog(
                             .padding(horizontal = 7.dp, vertical = 5.dp)
                     )
                 }
+                }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                // Footer Actions: Reset (64/64) and Close
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            onCutoffChange(64)
-                            onResonanceChange(64)
-                        },
-                        enabled = clampedCutoff != 64 || clampedResonance != 64,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(38.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = YamahaCyan,
-                            disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
-                        ),
-                        border = BorderStroke(
-                            1.dp,
-                            if (clampedCutoff != 64 || clampedResonance != 64) YamahaCyan.copy(alpha = 0.6f)
-                            else SynthCardBorder
-                        ),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                if (isLandscape) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.btn_filter_reset_center),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                        padBox(Modifier.size(175.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                FilterValueReadoutBox(
+                                    label = stringResource(R.string.axis_cutoff_x),
+                                    value = clampedCutoff,
+                                    accentColor = YamahaCyan,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                FilterValueReadoutBox(
+                                    label = stringResource(R.string.axis_resonance_y),
+                                    value = clampedResonance,
+                                    accentColor = SynthFaderActive,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(2.dp))
+
+                            OutlinedButton(
+                                onClick = {
+                                    onCutoffChange(64)
+                                    onResonanceChange(64)
+                                },
+                                enabled = clampedCutoff != 64 || clampedResonance != 64,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = YamahaCyan,
+                                    disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                                ),
+                                border = BorderStroke(
+                                    1.dp,
+                                    if (clampedCutoff != 64 || clampedResonance != 64) YamahaCyan.copy(alpha = 0.6f)
+                                    else SynthCardBorder
+                                ),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_filter_reset_center),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Button(
+                                onClick = onDismiss,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(36.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = YamahaCyan,
+                                    contentColor = Color.Black
+                                ),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.btn_close),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    // Portrait: Readouts -> Pad -> Buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        FilterValueReadoutBox(
+                            label = stringResource(R.string.axis_cutoff_x),
+                            value = clampedCutoff,
+                            accentColor = YamahaCyan,
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterValueReadoutBox(
+                            label = stringResource(R.string.axis_resonance_y),
+                            value = clampedResonance,
+                            accentColor = SynthFaderActive,
+                            modifier = Modifier.weight(1f)
                         )
                     }
 
-                    Button(
-                        onClick = onDismiss,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(38.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = YamahaCyan,
-                            contentColor = Color.Black
-                        ),
-                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    padBox(Modifier.fillMaxWidth().aspectRatio(1f))
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = stringResource(R.string.btn_close),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black
-                        )
+                        OutlinedButton(
+                            onClick = {
+                                onCutoffChange(64)
+                                onResonanceChange(64)
+                            },
+                            enabled = clampedCutoff != 64 || clampedResonance != 64,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = YamahaCyan,
+                                disabledContentColor = SynthMutedGray.copy(alpha = 0.4f)
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                if (clampedCutoff != 64 || clampedResonance != 64) YamahaCyan.copy(alpha = 0.6f)
+                                else SynthCardBorder
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_filter_reset_center),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        Button(
+                            onClick = onDismiss,
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(38.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = YamahaCyan,
+                                contentColor = Color.Black
+                            ),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_close),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
                     }
                 }
             }

@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.yamahamx.editor.R
 import com.yamahamx.editor.data.model.MidiDeviceInfoWrapper
@@ -41,10 +42,12 @@ import com.yamahamx.editor.data.model.PerformanceState
 import com.yamahamx.editor.data.model.YamahaVoice
 import com.yamahamx.editor.ui.components.ConnectionHeader
 import com.yamahamx.editor.ui.components.MidiLearnDialog
+import com.yamahamx.editor.ui.components.ReviewPromptDialog
 import com.yamahamx.editor.ui.components.SavePerformanceDialog
 import com.yamahamx.editor.ui.components.SplitKeyboardVisualizer
 import com.yamahamx.editor.ui.theme.*
 import com.yamahamx.editor.ui.viewmodel.PerformanceViewModel
+import com.yamahamx.editor.util.ReviewPromptManager
 
 enum class ViewMode {
     DETAIL,
@@ -99,6 +102,21 @@ fun PerformanceScreen(
     var currentViewMode by remember { mutableStateOf(ViewMode.DETAIL) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showReviewPromptDialog by remember { mutableStateOf(false) }
+
+    val showUpgradeDialog by viewModel.showUpgradeDialog.collectAsState()
+    val showStartupPaywallDialog by viewModel.showStartupPaywallDialog.collectAsState()
+
+    val isAnyModalOpen = showResetDialog || showSaveDialog || isMidiLearnActive ||
+        showUpgradeDialog || (showStartupPaywallDialog && !isProUser)
+
+    LaunchedEffect(Unit) {
+        ReviewPromptManager.registerAppLaunch(context)
+        delay(3000L)
+        if (!isAnyModalOpen && ReviewPromptManager.shouldShowReviewPrompt(context)) {
+            showReviewPromptDialog = true
+        }
+    }
 
     LaunchedEffect(midiLearnFeedback) {
         midiLearnFeedback?.let { msg ->
@@ -686,6 +704,29 @@ fun PerformanceScreen(
             onRestoreDefault = { viewModel.restoreDefaultMidiMapping() },
             onRemoveMapping = { viewModel.removeMidiMapping() },
             onCancel = { viewModel.cancelMidiLearn() }
+        )
+    }
+
+    // Google Play In-App Review Prompt Dialog
+    if (showReviewPromptDialog && !isAnyModalOpen) {
+        val activity = context as? android.app.Activity
+        ReviewPromptDialog(
+            onRateClicked = {
+                showReviewPromptDialog = false
+                if (activity != null) {
+                    ReviewPromptManager.launchReviewFlow(activity)
+                } else {
+                    ReviewPromptManager.openPlayStoreFallback(context)
+                }
+            },
+            onRemindLaterClicked = {
+                showReviewPromptDialog = false
+                ReviewPromptManager.onRemindLater(context)
+            },
+            onDismissRequest = {
+                showReviewPromptDialog = false
+                ReviewPromptManager.onDismiss(context)
+            }
         )
     }
 }

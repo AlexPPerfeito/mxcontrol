@@ -12,8 +12,8 @@ android {
         applicationId = "com.alexperfeito.mxcontrol"
         minSdk = 24 // Android 7.0 Nougat (exigido pela Proteção Automática do Google Play)
         targetSdk = 36
-        versionCode = 54
-        versionName = "1.4.3"
+        versionCode = 55
+        versionName = "1.4.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -106,8 +106,9 @@ dependencies {
     // Google Play Billing
     implementation("com.android.billingclient:billing:8.0.0")
 
-    // Google Play In-App Updates
+    // Google Play In-App Updates & Reviews
     implementation("com.google.android.play:app-update-ktx:2.1.0")
+    implementation("com.google.android.play:review-ktx:2.0.2")
 
     // Debug tooling
     debugImplementation("androidx.compose.ui:ui-tooling")

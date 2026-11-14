@@ -468,4 +468,10 @@
     <string name="comp_param_release_short">RELEASE</string>
     <string name="comp_release_title">Tempo de Liberação (Release)</string>
     <string name="btn_reset_comp">Reset Comp</string>
+
+    <!-- In-App Review Prompt -->
+    <string name="review_prompt_title">Curtindo o MX Control?</string>
+    <string name="review_prompt_message">Sua avaliação na Google Play ajuda muito a manter o desenvolvimento ativo e trazer novos recursos para o seu Yamaha MX!</string>
+    <string name="review_prompt_btn_rate">Avaliar agora</string>
+    <string name="review_prompt_btn_later">Lembrar na próxima semana</string>
 </resources>

@@ -10,7 +10,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -65,6 +67,7 @@ fun MasterEqGraphDialog(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE ||
         configuration.screenWidthDp > configuration.screenHeightDp
+    val screenHeight = configuration.screenHeightDp.dp
     val density = LocalDensity.current
 
     val safeGains = remember(masterEqGains) {
@@ -96,9 +99,12 @@ fun MasterEqGraphDialog(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(if (isLandscape) 0.78f else 0.95f)
-                .widthIn(max = 520.dp)
-                .padding(horizontal = 8.dp, vertical = 8.dp),
+                .fillMaxWidth(if (isLandscape) 0.88f else 0.95f)
+                .widthIn(max = if (isLandscape) 640.dp else 520.dp)
+                .heightIn(max = screenHeight * 0.92f)
+                .systemBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(containerColor = SynthCardBackground),
             border = BorderStroke(1.5.dp, YamahaCyan.copy(alpha = 0.7f)),
@@ -107,7 +113,9 @@ fun MasterEqGraphDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(if (isLandscape) 12.dp else 16.dp),
+                    .heightIn(max = screenHeight * 0.92f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(if (isLandscape) 10.dp else 16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 // Header Row: Badge & Frequency Range Info
@@ -220,10 +228,11 @@ fun MasterEqGraphDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Interactive EQ Curve Graph Box
+                val graphHeight = if (isLandscape) 140.dp else 200.dp
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (isLandscape) 165.dp else 225.dp)
+                        .height(graphHeight)
                         .clip(RoundedCornerShape(12.dp))
                         .background(SynthDarkBackground)
                         .border(
@@ -232,8 +241,8 @@ fun MasterEqGraphDialog(
                             shape = RoundedCornerShape(12.dp)
                         )
                         .pointerInput(Unit) {
-                            val padTopPx = 18.dp.toPx()
-                            val padBottomPx = 22.dp.toPx()
+                            val padTopPx = (if (isLandscape) 14.dp else 18.dp).toPx()
+                            val padBottomPx = (if (isLandscape) 18.dp else 22.dp).toPx()
 
                             fun findClosestBandIndex(touchX: Float, boxWidth: Int): Int {
                                 val totalW = boxWidth.toFloat().coerceAtLeast(1f)
@@ -285,8 +294,8 @@ fun MasterEqGraphDialog(
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val totalWidth = size.width
                         val totalHeight = size.height
-                        val padTop = 18.dp.toPx()
-                        val padBottom = 22.dp.toPx()
+                        val padTop = (if (isLandscape) 14.dp else 18.dp).toPx()
+                        val padBottom = (if (isLandscape) 18.dp else 22.dp).toPx()
                         val plotH = (totalHeight - padTop - padBottom).coerceAtLeast(1f)
                         val centerY = padTop + plotH * 0.5f
 
@@ -563,7 +572,7 @@ fun MasterEqGraphDialog(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 12.dp))
 
                 // Footer Actions: Reset EQ (Flat) and Close
                 val isEqModified = safeGains.any { it != 64 }
@@ -573,7 +582,10 @@ fun MasterEqGraphDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
-                        onClick = onResetFlat,
+                        onClick = {
+                            activeDraggedBand = null
+                            onResetFlat()
+                        },
                         enabled = isEqModified,
                         modifier = Modifier
                             .weight(1f)
