@@ -453,4 +453,20 @@
     <string name="review_prompt_message">Sua avaliação na Google Play ajuda muito a manter o desenvolvimento ativo e trazer novos recursos para o seu Yamaha MX!</string>
     <string name="review_prompt_btn_rate">Avaliar agora</string>
     <string name="review_prompt_btn_later">Lembrar na próxima semana</string>
+
+    <!-- Salvamento no Teclado Físico (Yamaha MX) -->
+    <string name="btn_save_to_keyboard">Salvar no Teclado</string>
+    <string name="btn_save_to_keyboard_short">TECLADO</string>
+    <string name="cd_save_to_keyboard">Salvar Performance no Teclado Físico</string>
+    <string name="dialog_save_keyboard_title">Salvar no Yamaha MX</string>
+    <string name="save_keyboard_name_label">Nome no Visor do MX (máx. 10 caracteres ASCII)</string>
+    <string name="save_keyboard_lcd_preview">VISOR LCD DO MX</string>
+    <string name="save_keyboard_instructions_title">Instruções de Gravação no Hardware:</string>
+    <string name="save_keyboard_step_send">1. Toque em "Enviar ao Teclado" abaixo para carregar os parâmetros no Edit Buffer.</string>
+    <string name="save_keyboard_step_store">2. No painel físico do Yamaha MX, pressione o botão [STORE].</string>
+    <string name="save_keyboard_step_dial_enter">3. Selecione o slot de destino (001 a 128) no dial e pressione [ENTER] para gravar.</string>
+    <string name="save_keyboard_parts_notice">Nota: Ao tocar o Yamaha MX sozinho (sem o celular conectado), o teclado aciona nativamente as Partes 1 e 2 (Layer/Split). As Partes 3 a 16 ficam salvas na Performance e respondem via canais MIDI externos ou quando o MX Control está conectado.</string>
+    <string name="save_keyboard_btn_sync_buffer">Enviar ao Teclado</string>
+    <string name="save_keyboard_btn_close">Fechar</string>
+    <string name="save_keyboard_not_connected_alert">Yamaha MX não conectado. Conecte o cabo USB OTG ou dispositivo Bluetooth MIDI para salvar no teclado.</string>
 </resources>

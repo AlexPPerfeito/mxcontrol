@@ -422,7 +422,8 @@ class YamahaSysExEncoderTest {
     @Test
     fun testPartInsertionSwitchDirect() {
         val msgs = YamahaSysExEncoder.setPartInsertionSwitch(0, true)
-        assertEquals(3, msgs.size)
+        // Must contain only InsSw (0x11) and InsSw Alt (0x42). 0x18 is Portamento Switch and must NOT be sent.
+        assertEquals(2, msgs.size)
         // 1. Play Mode InsSw: 0x37 0x00 0x11 0x01
         assertArrayEquals(
             byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x11.toByte(), 0x01.toByte(), 0xF7.toByte()),
@@ -432,11 +433,6 @@ class YamahaSysExEncoderTest {
         assertArrayEquals(
             byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x42.toByte(), 0x01.toByte(), 0xF7.toByte()),
             msgs[1]
-        )
-        // 3. Param with Voice: 0x37 0x00 0x18 0x01
-        assertArrayEquals(
-            byteArrayOf(0xF0.toByte(), 0x43.toByte(), 0x10.toByte(), 0x7F.toByte(), 0x17.toByte(), 0x37.toByte(), 0x00.toByte(), 0x18.toByte(), 0x01.toByte(), 0xF7.toByte()),
-            msgs[2]
         )
     }
 

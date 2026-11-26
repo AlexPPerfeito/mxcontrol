@@ -9,6 +9,8 @@ import com.yamahamx.editor.data.billing.BillingManager
 import com.yamahamx.editor.data.midi.MidiConnectionManager
 import com.yamahamx.editor.data.midi.MidiVoiceEvent
 import com.yamahamx.editor.data.midi.PartSpilloverRouter
+import com.yamahamx.editor.data.midi.SaveToHardwareState
+import com.yamahamx.editor.data.midi.YamahaMxSysExStorage
 import com.yamahamx.editor.data.midi.YamahaSysExEncoder
 import com.yamahamx.editor.data.model.BleMidiDevice
 import com.yamahamx.editor.data.model.MidiDeviceInfoWrapper
@@ -201,6 +203,10 @@ class PerformanceViewModel(
     private val _currentLoadedPerformanceId = MutableStateFlow<String?>(null)
     val currentLoadedPerformanceId: StateFlow<String?> = _currentLoadedPerformanceId.asStateFlow()
     val loadedPerformanceId: StateFlow<String?> get() = currentLoadedPerformanceId
+
+    private val _saveToHardwareState = MutableStateFlow<SaveToHardwareState>(SaveToHardwareState.Idle)
+    val saveToHardwareState: StateFlow<SaveToHardwareState> = _saveToHardwareState.asStateFlow()
+    private var saveToHardwareJob: Job? = null
 
     private val _partActivityStates = MutableStateFlow<Map<Int, Boolean>>(emptyMap())
     val partActivityStates: StateFlow<Map<Int, Boolean>> = _partActivityStates.asStateFlow()
@@ -1223,6 +1229,73 @@ class PerformanceViewModel(
 
         // Send all messages in sequence with 15ms safe spacing
         midiManager.sendSequence(batchMessages, delayMs = 15L)
+    }
+
+    fun resetSaveToHardwareState() {
+        saveToHardwareJob?.cancel()
+        saveToHardwareJob = null
+        _saveToHardwareState.value = SaveToHardwareState.Idle
+    }
+
+    /**
+     * Transmits all parameters of the current Performance to the Yamaha MX Edit Buffer
+     * with a controlled 20ms delay between messages to prevent buffer overflow.
+     * Reports reactive progress (0% to 100%).
+     */
+    fun syncFullPerformanceToEditBuffer(performanceName: String) {
+        val currentState = _uiState.value
+        if (!currentState.isConnected) {
+            _saveToHardwareState.value = SaveToHardwareState.Error(
+                message = "Yamaha MX desconectado. Conecte o cabo USB ou Bluetooth MIDI.",
+                isConnectionError = true
+            )
+            return
+        }
+
+        saveToHardwareJob?.cancel()
+        saveToHardwareJob = viewModelScope.launch {
+            try {
+                val cleanName = YamahaMxSysExStorage.sanitizeMxPerformanceName(performanceName)
+                _uiState.update { it.copy(common = it.common.copy(performanceName = cleanName)) }
+
+                val messages = YamahaMxSysExStorage.buildFullPerformanceEditBufferMessages(currentState, cleanName)
+                val totalMessages = messages.size
+
+                _saveToHardwareState.value = SaveToHardwareState.Progress(
+                    percentage = 0,
+                    currentStep = "Iniciando sincronização com o teclado..."
+                )
+
+                for ((index, msg) in messages.withIndex()) {
+                    if (!_uiState.value.isConnected) {
+                        _saveToHardwareState.value = SaveToHardwareState.Error(
+                            message = "Conexão MIDI perdida durante o envio dos parâmetros.",
+                            isConnectionError = true
+                        )
+                        return@launch
+                    }
+
+                    midiManager.sendImmediate(msg)
+                    delay(20L) // Safe 20ms interval per specification
+
+                    val progressPercent = ((index + 1) * 100) / totalMessages
+                    _saveToHardwareState.value = SaveToHardwareState.Progress(
+                        percentage = progressPercent.coerceIn(0, 100),
+                        currentStep = "Enviando parâmetros para o visor e canais (${index + 1}/$totalMessages)..."
+                    )
+                }
+
+                _saveToHardwareState.value = SaveToHardwareState.Success(
+                    message = "Performance sincronizada no teclado com sucesso!"
+                )
+            } catch (e: Exception) {
+                Log.e("PerformanceViewModel", "Erro ao sincronizar Edit Buffer: ${e.message}", e)
+                _saveToHardwareState.value = SaveToHardwareState.Error(
+                    message = "Erro ao enviar dados para o teclado: ${e.message}",
+                    isConnectionError = false
+                )
+            }
+        }
     }
 
     fun deletePerformance(id: String) {

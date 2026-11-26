@@ -412,4 +412,20 @@
     <string name="review_prompt_message">Your Google Play review really helps keep development active and bring new features to your Yamaha MX!</string>
     <string name="review_prompt_btn_rate">Rate now</string>
     <string name="review_prompt_btn_later">Remind next week</string>
+
+    <!-- Save to Physical Keyboard (Yamaha MX) -->
+    <string name="btn_save_to_keyboard">Save to Keyboard</string>
+    <string name="btn_save_to_keyboard_short">KEYBOARD</string>
+    <string name="cd_save_to_keyboard">Save Performance to Physical Keyboard</string>
+    <string name="dialog_save_keyboard_title">Save to Yamaha MX</string>
+    <string name="save_keyboard_name_label">MX Display Name (max 10 ASCII chars)</string>
+    <string name="save_keyboard_lcd_preview">MX LCD DISPLAY</string>
+    <string name="save_keyboard_instructions_title">Hardware Storing Instructions:</string>
+    <string name="save_keyboard_step_send">1. Tap "Send to Keyboard" below to load all parameters into the Edit Buffer.</string>
+    <string name="save_keyboard_step_store">2. On the Yamaha MX physical panel, press the [STORE] button.</string>
+    <string name="save_keyboard_step_dial_enter">3. Select the destination slot (001 to 128) using the dial and press [ENTER] to store.</string>
+    <string name="save_keyboard_parts_notice">Note: When playing the Yamaha MX standalone (without phone connected), the physical keyboard triggers Parts 1 and 2 (Layer/Split). Parts 3 to 16 are stored in the Performance and respond to external MIDI channels or when MX Control is connected.</string>
+    <string name="save_keyboard_btn_sync_buffer">Send to Keyboard</string>
+    <string name="save_keyboard_btn_close">Close</string>
+    <string name="save_keyboard_not_connected_alert">Yamaha MX not connected. Connect via USB OTG cable or Bluetooth MIDI device to save to keyboard.</string>
 </resources>

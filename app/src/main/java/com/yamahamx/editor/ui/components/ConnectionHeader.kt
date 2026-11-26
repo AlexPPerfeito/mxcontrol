@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.Usb
@@ -49,6 +50,7 @@ fun ConnectionHeader(
     onPanicClicked: () -> Unit,
     onSyncRequested: () -> Unit = {},
     onSaveRequested: () -> Unit = {},
+    onSaveToKeyboardRequested: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showDeviceMenu by remember { mutableStateOf(false) }
@@ -162,8 +164,12 @@ fun ConnectionHeader(
                     }
                 }
 
-                // Middle: Device selection dropdown trigger
-                Box {
+                // Middle: Device selection dropdown trigger (weight applied so device name ellipses without squeezing action buttons)
+                Box(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .padding(horizontal = 4.dp)
+                ) {
                     Row(
                         modifier = Modifier
                             .widthIn(max = 185.dp)
@@ -217,7 +223,7 @@ fun ConnectionHeader(
                 }
 
                 // Right controls: Part 1-2 Link Switch, Sync Button & Panic Button
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -271,6 +277,33 @@ fun ConnectionHeader(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = stringResource(R.string.btn_save_top),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+
+                    Button(
+                        onClick = onSaveToKeyboardRequested,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1E2638),
+                            contentColor = if (isConnected) YamahaCyan else Color.Gray
+                        ),
+                        shape = RoundedCornerShape(6.dp),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        modifier = Modifier
+                            .height(28.dp)
+                            .defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Keyboard,
+                            contentDescription = stringResource(R.string.cd_save_to_keyboard),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.btn_save_to_keyboard_short),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Black,
                             maxLines = 1,
@@ -395,6 +428,33 @@ fun ConnectionHeader(
                             Spacer(modifier = Modifier.width(2.dp))
                             Text(
                                 text = stringResource(R.string.btn_save_top),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Black,
+                                maxLines = 1,
+                                softWrap = false
+                            )
+                        }
+
+                        Button(
+                            onClick = onSaveToKeyboardRequested,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF1E2638),
+                                contentColor = if (isConnected) YamahaCyan else Color.Gray
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                            modifier = Modifier
+                                .height(28.dp)
+                                .defaultMinSize(minWidth = 1.dp, minHeight = 1.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Keyboard,
+                                contentDescription = stringResource(R.string.cd_save_to_keyboard),
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Spacer(modifier = Modifier.width(2.dp))
+                            Text(
+                                text = stringResource(R.string.btn_save_to_keyboard_short),
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Black,
                                 maxLines = 1,

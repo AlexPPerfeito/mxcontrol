@@ -44,6 +44,7 @@ import com.yamahamx.editor.ui.components.ConnectionHeader
 import com.yamahamx.editor.ui.components.MidiLearnDialog
 import com.yamahamx.editor.ui.components.ReviewPromptDialog
 import com.yamahamx.editor.ui.components.SavePerformanceDialog
+import com.yamahamx.editor.ui.components.SaveToKeyboardDialog
 import com.yamahamx.editor.ui.components.SplitKeyboardVisualizer
 import com.yamahamx.editor.ui.theme.*
 import com.yamahamx.editor.ui.viewmodel.PerformanceViewModel
@@ -102,12 +103,13 @@ fun PerformanceScreen(
     var currentViewMode by remember { mutableStateOf(ViewMode.DETAIL) }
     var showResetDialog by remember { mutableStateOf(false) }
     var showSaveDialog by remember { mutableStateOf(false) }
+    var showSaveToKeyboardDialog by remember { mutableStateOf(false) }
     var showReviewPromptDialog by remember { mutableStateOf(false) }
 
     val showUpgradeDialog by viewModel.showUpgradeDialog.collectAsState()
     val showStartupPaywallDialog by viewModel.showStartupPaywallDialog.collectAsState()
 
-    val isAnyModalOpen = showResetDialog || showSaveDialog || isMidiLearnActive ||
+    val isAnyModalOpen = showResetDialog || showSaveDialog || showSaveToKeyboardDialog || isMidiLearnActive ||
         showUpgradeDialog || (showStartupPaywallDialog && !isProUser)
 
     LaunchedEffect(Unit) {
@@ -147,6 +149,9 @@ fun PerformanceScreen(
                     } else {
                         showSaveDialog = true
                     }
+                },
+                onSaveToKeyboardRequested = {
+                    showSaveToKeyboardDialog = true
                 }
             )
         },
@@ -726,6 +731,26 @@ fun PerformanceScreen(
             onDismissRequest = {
                 showReviewPromptDialog = false
                 ReviewPromptManager.onDismiss(context)
+            }
+        )
+    }
+
+    // Save to Physical Keyboard (Yamaha MX) Dialog
+    val saveToHardwareState by viewModel.saveToHardwareState.collectAsState()
+    if (showSaveToKeyboardDialog) {
+        SaveToKeyboardDialog(
+            initialPerformanceName = state.common.performanceName,
+            isConnected = state.isConnected,
+            saveState = saveToHardwareState,
+            onSyncEditBuffer = { name ->
+                viewModel.syncFullPerformanceToEditBuffer(name)
+            },
+            onResetState = {
+                viewModel.resetSaveToHardwareState()
+            },
+            onDismiss = {
+                showSaveToKeyboardDialog = false
+                viewModel.resetSaveToHardwareState()
             }
         )
     }

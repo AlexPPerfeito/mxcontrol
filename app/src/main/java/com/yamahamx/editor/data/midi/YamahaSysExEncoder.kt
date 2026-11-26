@@ -449,15 +449,14 @@ object YamahaSysExEncoder {
      * Directly switches InsSw inside the Part (02:Part -> 01:Play Mode -> InsSw):
      * - Multi Part Insertion Switch (0x37 [partIndex] 0x11 [00|01])
      * - Multi Part InsSw Alternative offset (0x37 [partIndex] 0x42 [00|01])
-     * - Multi Part Param with Voice (0x37 [partIndex] 0x18 [01])
+     * Note: Never modify offset 0x18 (which is Portamento Switch on Yamaha MX).
      */
     fun setPartInsertionSwitch(partIndex: Int, enabled: Boolean): List<ByteArray> {
         val clampedPart = partIndex.coerceIn(0, 15).toByte()
         val data = if (enabled) 0x01.toByte() else 0x00.toByte()
         return listOf(
             buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_PLAY_MODE_INS_SW, data),
-            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_INS_SW_ALT, data),
-            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, 0x18.toByte(), if (enabled) 0x01.toByte() else 0x00.toByte())
+            buildParamChange(ADDR_HIGH_MULTI_PART, clampedPart, ADDR_LOW_PART_INS_SW_ALT, data)
         )
     }
 
